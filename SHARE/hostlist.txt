@@ -1,0 +1,6 @@
+# hosts
+
+testkc-kc1
+ testkc-kc2
+testkc-kc3  
+### ignore last space

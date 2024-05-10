@@ -1,0 +1,46 @@
+services:
+  mariadb:
+    hostname: mariadb
+    build: ./mariadb
+    init: true
+    restart: "no"
+    privileged: true
+    networks:
+      mynet:
+    ports:
+      # https://mariadb.com/kb/en/configuring-mariadb-galera-cluster/#network-ports
+      # https://mariadb.com/kb/en/galera-cluster-system-variables/
+      # Standard MariaDB Port (default: 3306)
+      # for Keycloak in Docker network
+      - 3306:3306
+      # Galera Replication Port (default: 4567)
+      - 4567:4567/udp
+      - 4567:4567/tcp
+      # IST Port (default: 4568)
+      - 4568:4568
+      # SST Port (default: 4444)
+      - 4444:4444
+    volumes:
+      - type: volume
+        source: mariadb_data
+        target: /var/lib/mysql
+      - ./mariadb/initdb.d/sysbench.sql:/docker-entrypoint-initdb.d/sysbench.sql:ro
+      - ./hostlist.txt:/hostlist.txt
+    environment:
+      - WSREP_NODE_ADDRESS=${WSREP_NODE_ADDRESS:-}
+      - WSREP_NEW_CLUSTER=${WSREP_NEW_CLUSTER:-no}
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      - MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=yes
+      # % = any source IP address
+      - MARIADB_ROOT_HOST=%
+      #- MARIADB_ROOT_PASSWORD=secret123
+      - MARIADB_DATABASE=demo
+      - MARIADB_INITDB_SKIP_TZINFO=true
+      - TZ=Asia/Tokyo
+
+volumes:
+  mariadb_data:
+
+networks:
+  mynet:  # IPv4 only
+    driver: bridge
