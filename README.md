@@ -10,8 +10,14 @@ TODO
 
 - ./01_create-hosts.sh
 - ./02_install.sh
+- ./03_ca.sh
 
-### 初期ノード構築 (初期起動ノード)
+TODO
+- XX_update-etchosts.sh
+- XX_squid.sh
+
+
+### 初期 DB ノード構築 (初期起動ノード)
 
 - make shell@kc1
 - (イメージ再ビルドする場合) docker compose build
@@ -20,7 +26,7 @@ TODO
 - 起動を確認:
   - ./mariadb-status.sh
 
-### 追加ノード構築・参加 (2台目以降)
+### 追加 DB ノード構築・参加 (2台目以降)
 
 - `make shell@kc2`
   - or `make shell@kc3`
@@ -36,15 +42,39 @@ TODO
 
 - make mariadb-status
 
+### 各アプリ起動
+
+各ノードにて以下を実行する。
+
+- docker compose up -d keycloak nginx squid
+
+TODO keepalived, jwt-server
+
+## ブラウザアクセス
+
+kc1コンテナのeth0 IPアドレスを lxc ls で確認
+
+```
+Host dev(任意名)
+HostName サーバのIPアドレス
+User ユーザ名
+Port 22
+LocalForward 57000 kc1コンテナのIPアドレス:13128
+```
+
+ssh dev
+SwitchyOmega の設定 localhost 57000
+keycloak.example.org を auto switch
+
 ## 単体ノード停止・再開
 
 TODO
 
 ## 全ノード停止・再開
 
-TODO 停止順序、
+TODO mariadb の停止順序、起動順序が重要
 
-## 単体ノード破棄(故障想定)
+## 単体 DB データ破棄(故障想定)
 
 - make shell@???
 - docker compose down -v

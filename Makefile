@@ -1,6 +1,11 @@
-PROJECT = testkc
+define get_val
+	$(shell grep ^$(1)= common.sh | cut -d= -f 2 | tr -d '"')
+endef
+
+PROJECT = $(call get_val,PROJECT)
 HOSTS = kc1 kc2 kc3
-EXEC = lxc exec --cwd /SHARE
+LXC := $(call get_val,LXC)
+EXEC = $(LXC) exec --cwd /SHARE
 
 define gen_target
        $(foreach name,$(HOSTS),$(1)@$(name))

@@ -34,9 +34,65 @@ services:
       # % = any source IP address
       - MARIADB_ROOT_HOST=%
       #- MARIADB_ROOT_PASSWORD=secret123
-      - MARIADB_DATABASE=demo
+      - MARIADB_DATABASE=keycloak
+      - MARIADB_USER=keycloak
+      - MARIADB_PASSWORD=${MARIADB_PASSWORD:-keycloak_password}
       - MARIADB_INITDB_SKIP_TZINFO=true
       - TZ=Asia/Tokyo
+
+  # for legacy version
+  keycloak:
+    hostname: keycloak
+    image: quay.io/keycloak/keycloak:15.0.2
+    #image: quay.io/keycloak/keycloak:19.0.3-legacy
+    init: true
+    restart: "no"
+    #depends_on:
+    #  - mariadb
+    networks:
+      mynet:
+    ports:
+      - 8080:8080
+    environment:
+      - PROXY_ADDRESS_FORWARDING=true
+      - DB_VENDOR=mariadb
+      - DB_ADDR=mariadb
+      - DB_DATABASE=keycloak
+      - DB_USER=keycloak
+      - DB_PASSWORD=${MARIADB_PASSWORD:-keycloak_password}
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=${KEYCLOAK_PASSWORD:-admin}
+
+  # TODO new keycloak
+
+  nginx:
+    hostname: nginx
+    image: nginx
+    init: true
+    restart: "no"
+    #restart: always
+    #depends_on:
+    #  - keycloak
+    networks:
+      mynet:
+        aliases:
+          - keycloak.example.org
+          - jwtserver.example.org
+    ports:
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs/keycloak.example.org/cert.pem:/etc/nginx/cert.pem:ro
+      - ./certs/keycloak.example.org/key.pem:/etc/nginx/key.pem:ro
+
+  squid:
+    image: ubuntu/squid
+    networks:
+      mynet:
+    ports:
+      - "0.0.0.0:13128:3128"
+    volumes:
+      - ./squid-allow-ssl-ports.conf:/etc/squid/conf.d/allow-ssl-ports.conf:ro
 
 volumes:
   mariadb_data:

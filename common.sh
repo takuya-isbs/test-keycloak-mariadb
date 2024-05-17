@@ -1,8 +1,10 @@
 PROJECT="testkc"
 LXD_IMAGE=ubuntu:22.04
+HOST1="${PROJECT}-kc1"
 HOSTS="${PROJECT}-kc1 ${PROJECT}-kc2 ${PROJECT}-kc3"
 NETWORK_NAME=$PROJECT
 PROFILE_NAME=${PROJECT}-prof
+LXC=lxc
 
 exec_para() {
     HOSTS="$1"
@@ -10,7 +12,7 @@ exec_para() {
     for HOST in $HOSTS; do
 	eval "HOST_${HOST}_tmp=\$(mktemp --suffix=${PROJECT}.log)"
 	eval "LOG=\${HOST_${HOST}_tmp}"
-	lxc exec $HOST -- "$@" > $LOG 2>&1 &
+	$LXC exec $HOST -- "$@" > $LOG 2>&1 &
     done
     wait
     for HOST in $HOSTS; do
