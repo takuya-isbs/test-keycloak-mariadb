@@ -25,7 +25,6 @@ while IFS= read -r line; do
 done < /hostlist.txt
 
 WSREP_CLUSTER_ADDRESS="gcomm://${hosts}"
-#WSREP_CLUSTER_ADDRESS="gcomm://10.60.204.177,10.60.204.192,10.60.204.145"
 
 IST_RECV_ADDR=${WSREP_NODE_ADDRESS}  # external address
 IST_BIND_ADDR=0.0.0.0

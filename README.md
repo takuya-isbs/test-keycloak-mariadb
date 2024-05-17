@@ -11,20 +11,19 @@ TODO
 - ./01_create-hosts.sh
 - ./02_install.sh
 
-### kc1 ノード (初期起動ノード)
+### 初期ノード構築 (初期起動ノード)
 
-- make shell-kc1
-- cd /SHARE
+- make shell@kc1
 - (イメージ再ビルドする場合) docker compose build
 - ./mariadb-new.sh
   - 初回、クラスタ作成時のみ
 - 起動を確認:
   - ./mariadb-status.sh
 
-### kc2, kc3 ノード (2台目以降)
+### 追加ノード構築・参加 (2台目以降)
 
-- make shell-kc2
-  - or `make shell-kc3`
+- `make shell@kc2`
+  - or `make shell@kc3`
 - (イメージ再ビルドする場合) docker compose build
 - ./mariadb-join.sh
   - 2台目以降参加する場合
@@ -33,21 +32,23 @@ TODO
 - mariadb のみ動作確認:
   - ./mariadb-benchmark.sh
 
+ホスト OS にて全体確認
+
+- make mariadb-status
+
 ## 単体ノード停止・再開
 
 TODO
 
 ## 全ノード停止・再開
 
-TODO
+TODO 停止順序、
 
-## 単体ノード破棄(故障想定)・再構築・再所属
+## 単体ノード破棄(故障想定)
 
-TODO
-
-- make shell-???
-- cd /SHARE
+- make shell@???
 - docker compose down -v
+- 再度、初期ノードだとしても「追加ノード構築・参加」可能
 
 ## 全ノード破棄
 
