@@ -1,6 +1,23 @@
 # test-keycloak-mariadb
 
-(((Keycloak + MariaDB + NGINX) on Docker + Keepalived) on LXD) x 3
+(((Keycloak + MariaDB + jwt-server + NGINX) on Docker + Keepalived) on LXD) x 3
+
+## 概要
+
+- LXD を利用し、実ホストと実ネットワークを想定した環境を構築
+  - LXD コンテナは、固定 IP アドレス
+  - LXD 自体は、実環境では利用しない想定
+- 3 台のホストが同一ネットワークに存在
+- それぞれのホストにて、docker compose でアプリ一式を起動
+  - docker compose で起動する一式が実環境でも動作することを想定
+- MariaDB Galera cluster で DB を冗長化
+  - 停止しないことが前提で、再起動はできない
+  - 破損・停止した場合は再所属手続きが必要
+- それぞれのホストで Keycloak が動作
+- 代表アドレスで Keycloak にアクセス
+  - Keepalived (VRRP) 利用
+  - NGINX で https 化、リバースプロキシ
+- Keepalived が無応答で(restart でも) 他のホストが代表に昇格
 
 ## 自動構築
 
@@ -11,10 +28,6 @@ TODO
 - ./01_create-hosts.sh
 - ./02_install.sh
 - ./03_ca.sh
-
-TODO
-- XX_update-etchosts.sh
-- XX_squid.sh
 
 ### 初期 DB ノード構築 (初期起動ノード)
 
@@ -48,15 +61,20 @@ TODO
 
 上記のように mariadb 起動後、各ノードにて以下を実行する。
 
-- docker compose up -d --no-recreate
-- 間違えて --no-recreate をつけなかった場合にやり直す方法
+- ./up.sh
+  - 処理概要
+    - ホスト名から IP アドレスを推定
+    - docker compose up -d --no-recreate を実行
+- 間違えて --no-recreate をつけずに起動してしまった場合
+  - mariadb が起動しない
+  - 再度 mariadb をクラスタに所属しなおす
   - docker compose down -v
   - ./mariadb-join.sh
   - ./mariadb-status.sh
 
 TODO jwt-server
 
-## ブラウザアクセス
+## squid 経由でウェブブラウザアクセス
 
 kc1 コンテナの eth0 IPアドレスを lxc ls で確認しておく。
 
@@ -92,10 +110,10 @@ mariadb コンテナ再構築は、上記「単体 DB データ破棄」の項�
 
 mariadb 以外は以下の方法で再構築する。
 
-- docker compose up -d keycloak
-- docker compose up -d nginx
-- docker compose up -d keepalived
-- docker compose up -d squid
+- ./recreate.sh keycloak
+- ./recreate.sh nginx
+- ./recreate.sh keepalived
+- ./recreate.sh squid
 
 TODO jwt-server
 
@@ -108,3 +126,19 @@ TODO jwt-server
 ## ログの確認
 
 - docker compose logs -f
+
+## テスト
+
+### ウェブブラウザ
+
+- squid 経由で https://keycloak.example.org に接続
+- admin:admin でログイン
+- レルム作成、ユーザ作成、ユーザ詳細画面表示したままにしておく
+- lxc ls で IPアドレスを確認
+  - ./myip.sh を LXD コンテナそれぞれで実行するでも良い
+- 10.60.204.11 のアドレスも追加でついているコンテナで操作
+  - docker compose restart keepalived
+  - ./myip.sh
+- 10.60.204.11 のアドレスが他のホストに移転されたことを確認
+- ユーザ詳細画面をリロード
+- 再度ログイン画面が出ずにユーザ詳細画面のままであれば成功

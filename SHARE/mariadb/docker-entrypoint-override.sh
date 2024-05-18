@@ -9,6 +9,11 @@ WSREP_NEW_CLUSTER=${WSREP_NEW_CLUSTER:-no}
 
 if [ $WSREP_NEW_CLUSTER = "yes" ]; then
     set -- "$@" --wsrep-new-cluster
+elif [ $WSREP_NEW_CLUSTER = "no" ]; then
+    :  # THROUGH
+else
+    echo >&2 "Error: No WSREP_NEW_CLUSTER"
+    exit 1
 fi
 
 hosts=""

@@ -1,0 +1,34 @@
+# SEE: https://keycloak.discourse.group/t/cluster-keycloak-ha-jdbc-ping-jgroups-discovery-external-ip/10137/3
+# FROM: https://github.com/keycloak/keycloak-containers/pull/204#issuecomment-575152116
+
+embed-server --server-config=standalone-ha.xml --std-out=echo
+batch
+
+/subsystem=jgroups/stack=tcp:remove()
+/subsystem=jgroups/stack=tcp:add
+/subsystem=jgroups/stack=tcp/transport=TCP:add(socket-binding=jgroups-tcp)
+/subsystem=jgroups/stack=tcp/protocol=JDBC_PING:add(data-source=KeycloakDS)
+/subsystem=jgroups/stack=tcp/protocol=MERGE3:add
+/subsystem=jgroups/stack=tcp/protocol=FD_SOCK:add
+/subsystem=jgroups/stack=tcp/protocol=FD_ALL:add
+/subsystem=jgroups/stack=tcp/protocol=VERIFY_SUSPECT:add
+/subsystem=jgroups/stack=tcp/protocol=pbcast.NAKACK2:add
+/subsystem=jgroups/stack=tcp/protocol=UNICAST3:add
+/subsystem=jgroups/stack=tcp/protocol=pbcast.STABLE:add
+/subsystem=jgroups/stack=tcp/protocol=pbcast.GMS:add
+/subsystem=jgroups/stack=tcp/protocol=MFC:add
+/subsystem=jgroups/stack=tcp/protocol=FRAG2:add
+/subsystem=jgroups/stack=udp:remove()
+/subsystem=jgroups/channel=ee:write-attribute(name=stack, value=tcp)
+/socket-binding-group=standard-sockets/socket-binding=jgroups-mping:remove()
+
+run-batch
+
+try
+    :resolve-expression(expression=${env.JGROUPS_DISCOVERY_EXTERNAL_IP})
+    /subsystem=jgroups/stack=tcp/transport=TCP/property=external_addr/:add(value=${env.JGROUPS_DISCOVERY_EXTERNAL_IP})
+catch
+    echo "JGROUPS_DISCOVERY_EXTERNAL_IP maybe not set."
+end-try
+
+stop-embedded-server

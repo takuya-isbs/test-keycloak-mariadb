@@ -2,8 +2,6 @@
 set -eu
 source ./common.sh
 
-IPADDR_PREFIX=10.60.204
-
 lxc network create $NETWORK_NAME
 lxc network edit $NETWORK_NAME <<EOF
 config:
