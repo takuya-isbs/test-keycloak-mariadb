@@ -1,10 +1,15 @@
+x-common: &common
+  restart: "no"
+  init: true
+  extra_hosts:
+    - "keycloak.example.org keycloak:10.60.204.11"
+    - "jwtserver.example.org keycloak:10.60.204.11"
+
 services:
   mariadb:
     hostname: mariadb
     build: ./mariadb
-    init: true
-    restart: "no"
-    privileged: true
+    #TODO???? privileged: true
     networks:
       mynet:
     ports:
@@ -39,15 +44,15 @@ services:
       - MARIADB_PASSWORD=${MARIADB_PASSWORD:-keycloak_password}
       - MARIADB_INITDB_SKIP_TZINFO=true
       - TZ=Asia/Tokyo
+    <<: [*common]
 
   # for legacy version
   keycloak:
     hostname: keycloak
     image: quay.io/keycloak/keycloak:15.0.2
     #image: quay.io/keycloak/keycloak:19.0.3-legacy
-    init: true
     restart: "no"
-    #depends_on:
+        #depends_on:
     #  - mariadb
     networks:
       mynet:
@@ -62,28 +67,37 @@ services:
       - DB_PASSWORD=${MARIADB_PASSWORD:-keycloak_password}
       - KEYCLOAK_USER=admin
       - KEYCLOAK_PASSWORD=${KEYCLOAK_PASSWORD:-admin}
+    <<: [*common]
 
   # TODO new keycloak
 
   nginx:
     hostname: nginx
     image: nginx
-    init: true
-    restart: "no"
-    #restart: always
-    #depends_on:
-    #  - keycloak
     networks:
       mynet:
-        aliases:
-          - keycloak.example.org
-          - jwtserver.example.org
     ports:
       - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./certs/keycloak.example.org/cert.pem:/etc/nginx/cert.pem:ro
       - ./certs/keycloak.example.org/key.pem:/etc/nginx/key.pem:ro
+    <<: [*common]
+
+  keepalived:
+    # SEE: https://github.com/osixia/docker-keepalived
+    image: osixia/keepalived:2.0.20
+    # Change and use host network
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_BROADCAST
+      - NET_RAW
+    environment:
+      #KEEPALIVED_COMMAND_LINE_ARGUMENTS: --log-detail
+      KEEPALIVED_UNICAST_PEERS: "#PYTHON2BASH:['10.60.204.101', '10.60.204.102', '10.60.204.103']"
+      KEEPALIVED_VIRTUAL_IPS: 10.60.204.11/24
+    <<: [*common]
 
   squid:
     image: ubuntu/squid
@@ -93,6 +107,7 @@ services:
       - "0.0.0.0:13128:3128"
     volumes:
       - ./squid-allow-ssl-ports.conf:/etc/squid/conf.d/allow-ssl-ports.conf:ro
+    <<: [*common]
 
 volumes:
   mariadb_data:

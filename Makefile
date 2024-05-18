@@ -3,7 +3,7 @@ define get_val
 endef
 
 PROJECT = $(call get_val,PROJECT)
-HOSTS = kc1 kc2 kc3
+HOSTS =  $(call get_val,HOSTS)
 LXC := $(call get_val,LXC)
 EXEC = $(LXC) exec --cwd /SHARE
 

@@ -2,11 +2,13 @@
 set -eu
 source ./common.sh
 
+IPADDR_PREFIX=10.60.204
+
 lxc network create $NETWORK_NAME
 lxc network edit $NETWORK_NAME <<EOF
 config:
-  ipv4.address: 10.60.204.1/24
-  ipv4.dhcp.ranges: 10.60.204.100-10.60.204.200
+  ipv4.address: ${IPADDR_PREFIX}.1/24
+  ipv4.dhcp.ranges: ${IPADDR_PREFIX}.200-${IPADDR_PREFIX}.250
   ipv4.nat: "true"
 description: ""
 type: bridge
@@ -33,8 +35,13 @@ devices:
     type: disk
 EOF
 
+INDEX_START=101
+
+INDEX=${INDEX_START}
 for HOST in $HOSTS; do
-    lxc launch $LXD_IMAGE $HOST -p $PROFILE_NAME
+    lxc launch $LXD_IMAGE $HOST -p $PROFILE_NAME -d eth0,ipv4.address=${IPADDR_PREFIX}.${INDEX}
+    INDEX=$((INDEX + 1))
 done
 
+sleep 5
 lxc ls ${PROJECT}-
