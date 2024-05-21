@@ -19,7 +19,7 @@ def E(*args):
     print('Error:', *args, file=sys.stderr)
 
 try:
-    k = KeycloakAdmin(
+    kapi = KeycloakAdmin(
         server_url=KEYCLOAK_URL,
         username=ADMIN_USERNAME,
         password=ADMIN_PASSWORD,
@@ -32,20 +32,20 @@ except KeycloakError as e:
     sys.exit(1)
 
 # REALM
-realms = k.get_realms()
+realms = kapi.get_realms()
 realm_names = [realm['realm'] for realm in realms]
 
 if REALM in realm_names:
-    print(f'Realm "{REALM}" already exists.')
+    print(f'create realm "{REALM}": already exists')
 else:
     new_realm = {
         'realm': REALM,
         'enabled': True
     }
-    k.create_realm(new_realm)
+    kapi.create_realm(new_realm)
 
 try:
-    k = KeycloakAdmin(
+    kapi = KeycloakAdmin(
         server_url=KEYCLOAK_URL,
         username=ADMIN_USERNAME,
         password=ADMIN_PASSWORD,
@@ -102,7 +102,7 @@ event_config = '''
  "adminEventsDetailsEnabled" : false
 }
 '''
-k.set_events(json.loads(event_config))
+kapi.set_events(json.loads(event_config))
 print('update events/config')
 
 realm_config = '''
@@ -118,8 +118,38 @@ realm_config = '''
   "oauth2DevicePollingInterval": 10
 }
 '''
-k.update_realm(REALM, json.loads(realm_config))
+kapi.update_realm(REALM, json.loads(realm_config))
 print('update REALM')
 
+realm = kapi.get_realm(REALM)
+#print(realm)
+realm_id = realm['id']
+print(f'realm_id={realm_id}')
+
+keys = kapi.get_keys()
+#print(keys)
+algorithms = []
+for key in keys['keys']:
+    algorithms.append(key['algorithm'])
+ES256 = 'ES256'
+if ES256 in algorithms:
+    print(f'create key "{ES256}": already exist')
+else:
+    component = '''
+{{
+  "name": "ecdsa-generated",
+  "providerId": "ecdsa-generated",
+  "providerType": "org.keycloak.keys.KeyProvider",
+  "parentId": "{}",
+  "config": {{
+    "priority": ["200"],
+    "enabled": ["true"],
+    "active": ["true"]
+  }}
+}}
+'''.format(realm_id)
+    print(json.loads(component))
+    kapi.create_component(json.loads(component))
+    print(f'create key "{ES256}"')
 
 print('DONE')
