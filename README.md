@@ -1,6 +1,6 @@
 # test-keycloak-mariadb
 
-(((Keycloak + MariaDB + jwt-server + NGINX) on Docker + Keepalived) on LXD) x 3
+(((Keycloak + MariaDB + jwt-server + NGINX + Keepalived) on Docker) on LXD) x 3
 
 ## 概要
 
@@ -18,6 +18,13 @@
   - Keepalived (VRRP) 利用
   - NGINX で https 化、リバースプロキシ
 - Keepalived が無応答で(restart でも) 他のホストが代表に昇格
+
+## Docker などインストール
+
+- Docker をインストール (公式手順に従う)
+- sudo usermod -a -G docker あなたのユーザ名
+  - 一旦ログアウトして再度ログイン
+  - sudo なしで docker コマンドを使えるようになる
 
 ## 自動構築
 
@@ -38,6 +45,8 @@ TODO
   - 初回、クラスタ作成時のみ
 - 起動を確認:
   - ./mariadb-status.sh
+- jwt-server 用のユーザ追加
+   - docker compose exec mariadb sh /mariadb-add-jwt-server.sh
 
 ### 追加 DB ノード構築・参加 (2台目以降)
 
@@ -49,9 +58,9 @@ TODO
   - 2台目以降参加する場合
 - 起動を確認:
   - ./mariadb-status.sh
+  - 3 台とも Synced になるまで確認して待つ
 - mariadb のみ動作確認:
   - ./mariadb-benchmark.sh
-  - 3 台とも Synced になるまで確認して待つ
 
 ホスト OS にて全体確認
 
@@ -68,7 +77,7 @@ TODO
 - 間違えて --no-recreate をつけずに起動してしまった場合
   - mariadb が起動しない
   - 再度 mariadb をクラスタに所属しなおす
-  - docker compose down -v
+  - docker compose down -v --remove-orphans
   - ./mariadb-join.sh
   - ./mariadb-status.sh
 
@@ -101,8 +110,9 @@ TODO mariadb の停止順序、起動順序が重要
 ## 単体 DB データ破棄(故障想定)
 
 - make shell@???
-- docker compose down -v
+- docker compose down -v --remove-orphans
 - 再度、初期ノードだとしても「追加ノード構築・参加」可能
+- 全ノードの DB を破棄した場合は、「初期 DB ノード構築」から再構築する
 
 ## コンテナ再構築
 
@@ -117,7 +127,7 @@ mariadb 以外は以下の方法で再構築する。
 
 TODO jwt-server
 
-## 全ノード破棄
+## 全ノード破棄 (完全初期化)
 
 - ./99_delete-hosts.sh
 

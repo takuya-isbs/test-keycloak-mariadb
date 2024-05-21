@@ -3,16 +3,15 @@ x-common: &common
   init: true
   extra_hosts:
     - "keycloak.example.org keycloak:10.60.204.11"
-    - "jwtserver.example.org keycloak:10.60.204.11"
+    - "jwtserver.example.org jwtserver:10.60.204.11"
 
 services:
   mariadb:
     hostname: mariadb
     build: ./mariadb
-    #TODO???? privileged: true
     # Copy-pasted from https://github.com/docker-library/mariadb/issues/94
     healthcheck:
-        test: ["CMD", "mysqladmin", "ping", "--silent"]
+      test: ["CMD", "mysqladmin", "ping", "--silent"]
     networks:
       mynet:
     ports:
@@ -20,7 +19,7 @@ services:
       # https://mariadb.com/kb/en/galera-cluster-system-variables/
       # Standard MariaDB Port (default: 3306)
       # for Keycloak in Docker network
-      - 3306:3306
+      #- 3306:3306
       # Galera Replication Port (default: 4567)
       - 4567:4567/udp
       - 4567:4567/tcp
@@ -34,6 +33,7 @@ services:
         target: /var/lib/mysql
       - ./mariadb/initdb.d/sysbench.sql:/docker-entrypoint-initdb.d/sysbench.sql:ro
       - ./hostlist.txt:/hostlist.txt:ro
+      - ./mariadb/mariadb-add-jwt-server.sh:/mariadb-add-jwt-server.sh:ro
     environment:
       - WSREP_NODE_ADDRESS=${WSREP_NODE_ADDRESS:-}
       - WSREP_NEW_CLUSTER=${WSREP_NEW_CLUSTER:-no}
@@ -41,12 +41,16 @@ services:
       - MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=yes
       # % = any source IP address
       - MARIADB_ROOT_HOST=%
-      #- MARIADB_ROOT_PASSWORD=secret123
+      # TODO - MARIADB_ROOT_HOST=localhost
+      # TODO - MARIADB_ROOT_PASSWORD=secret123
       - MARIADB_DATABASE=keycloak
       - MARIADB_USER=keycloak
       - MARIADB_PASSWORD=${MARIADB_PASSWORD:-keycloak_password}
       - MARIADB_INITDB_SKIP_TZINFO=true
       - TZ=Asia/Tokyo
+      - JWTSERVER_DB=${JWTSERVER_DB}
+      - JWTSERVER_DB_USER=${JWTSERVER_DB_USER}
+      - JWTSERVER_DB_PASSWORD=${JWTSERVER_DB_PASSWORD}
     <<: [*common]
 
   # for legacy version
@@ -73,7 +77,7 @@ services:
       # SEE: https://github.com/fit2anything/keycloak-cluster-setup-and-configuration/blob/master/README.md#3-jdbc_ping
       # SEE: https://www.keycloak.org/2019/05/keycloak-cluster-setup
       - JGROUPS_DISCOVERY_PROTOCOL=JDBC_PING
-      - JGROUPS_DISCOVERY_EXTERNAL_IP=${MY_IPADDR}
+      - JGROUPS_DISCOVERY_EXTERNAL_IP=${MY_IPADDR:-}
       # SEE: https://keycloak.discourse.group/t/keycloak-running-on-docker-cannot-synchronize-member-cluster/17256/4
       # for k8s...?
       #- JGROUPS_DISCOVERY_PROTOCOL=dns.DNS_PING
@@ -88,8 +92,29 @@ services:
       - ./JDBC_PING.cli:/opt/jboss/tools/cli/jgroups/discovery/JDBC_PING.cli:ro
     <<: [*common]
 
-  # TODO new keycloak
-  # https://keycloak.discourse.group/t/use-of-jdbc-ping-with-keycloak-17-quarkus-distro/13571
+  # TODO new keycloak (Quarkus)
+  # https://keycloak.discourse	.group/t/use-of-jdbc-ping-with-keycloak-17-quarkus-distro/13571
+  # https://gist.github.com/xgp/768eea11f92806b9c83f95902f7f8f80
+
+  # jwt-server
+  jwt-server:
+    build: ./jwt-server
+    hostname: jwtserver
+    networks:
+      mynet:
+    volumes:
+      - ./certs/minica.pem:/usr/share/pki/ca-trust-source/anchors/minica.crt
+    environment:
+      - KEYCLOAK=${JWTSERVER_KEYCLOAK_HOSTNAME:-keycloak.example.org}
+      - REALM=${JWTSERVER_REALM:-HPCI}
+      - CLIENT=${JWTSERVER_CLIENT:-hpci-jwt-server}
+      - USERCLAIM=${JWTSERVER_USERCLAIM:-hpci.id}
+      - SECRET=${JWTSERVER_SECRET:-fd0ff122-15b5-11ef-8529-00155dc8aa19}
+      - MYSQL_HOST=mariadb
+      - DB=${JWTSERVER_DB}
+      - USER=${JWTSERVER_DB_USER}
+      - PASSWORD=${JWTSERVER_DB_PASSWORD}
+    <<: [*common]
 
   nginx:
     hostname: nginx
@@ -102,6 +127,8 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./certs/keycloak.example.org/cert.pem:/etc/nginx/cert.pem:ro
       - ./certs/keycloak.example.org/key.pem:/etc/nginx/key.pem:ro
+      - ./certs/dummy.example.org/cert.pem:/etc/nginx/dummycert.pem:ro
+      - ./certs/dummy.example.org/key.pem:/etc/nginx/dummykey.pem:ro
     <<: [*common]
 
   keepalived:

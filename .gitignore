@@ -1,3 +1,5 @@
 *~
 /SHARE/certs/minica-key.pem
 /SHARE/certs/minica.pem
+/SHARE/certs/dummy.example.org/
+/SHARE/certs/keycloak.example.org/
