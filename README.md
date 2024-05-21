@@ -41,10 +41,12 @@ TODO
 - make shell@kc1
 - (必要に応じて docker login を実行する)
 - (イメージ再ビルドする場合) docker compose build
+- ./mariadb-stop.sh
 - ./mariadb-new.sh
   - 初回、クラスタ作成時のみ
 - 起動を確認:
   - ./mariadb-status.sh
+- (バックアップデータから戻す場合) ./mariadb-restore.sh ./BACKUP/ファイル名
 - jwt-server 用のユーザ追加
    - docker compose exec mariadb sh /mariadb-add-jwt-server.sh
 
@@ -54,6 +56,7 @@ TODO
   - or `make shell@kc3`
 - (必要に応じて docker login を実行する)
 - (イメージ再ビルドする場合) docker compose build
+- ./mariadb-stop.sh
 - ./mariadb-join.sh
   - 2台目以降参加する場合
 - 起動を確認:
@@ -81,18 +84,23 @@ TODO
   - ./mariadb-join.sh
   - ./mariadb-status.sh
 
-TODO jwt-server
-
 ## squid 経由でウェブブラウザアクセス
 
-kc1 コンテナの eth0 IPアドレスを lxc ls で確認しておく。
+manage コンテナにて squid を起動する。
+
+- make shell@manage
+- ./up.sh squid
+- exit
+
+manage コンテナの eth0 IPアドレスを lxc ls で確認しておく。
+(172.* ではないアドレス)
 
 ```
 Host {任意名(以下の例ではdev1)}
 HostName {サーバのIPアドレス}
 User ユーザ名
 Port 22
-LocalForward 57000 {kc1コンテナのIPアドレス}:13128
+LocalForward 57000 {manageコンテナのIPアドレス}:13128
 ```
 
 - ssh dev1
@@ -101,11 +109,21 @@ LocalForward 57000 {kc1コンテナのIPアドレス}:13128
 
 ## 単体ノード停止・再開
 
-TODO
+- ./mariadb-stop.sh
+- ./mariadb-join.sh
 
 ## 全ノード停止・再開
 
-TODO mariadb の停止順序、起動順序が重要
+- kc3, kc2, kc1 の順で一つずつ mariadb コンテナ停止
+  - ./mariadb-stop.sh
+  - コンテナは消えるが volume は残る
+- ./mariadb-show-bootstrap.sh が safe_to_bootstrap: 1 となるホストを探す
+  - 最後に停止したコンテナが 1 になる
+  - ./mariadb-stop.sh を念のため実行
+  - ./mariadb-new.sh を実行
+- その他ホスト
+  - ./mariadb-stop.sh を念のため実行
+  - ./mariadb-join.sh を実行
 
 ## 単体 DB データ破棄(故障想定)
 
@@ -125,13 +143,13 @@ mariadb 以外は以下の方法で再構築する。
 - ./recreate.sh keepalived
 - ./recreate.sh squid
 
-TODO jwt-server
-
 ## 全ノード破棄 (完全初期化)
 
 - ./99_delete-hosts.sh
 
 ## DB データバックアップ
+
+- ./mariadb-backup.sh
 
 ## ログの確認
 

@@ -1,9 +1,12 @@
+COMMON := $(realpath common.sh)
+
 define get_val
-	$(shell grep ^$(1)= common.sh | cut -d= -f 2 | tr -d '"')
+$(shell . $(COMMON); echo $$$(1) )
 endef
 
 PROJECT = $(call get_val,PROJECT)
 HOSTS =  $(call get_val,HOSTS)
+DB_HOSTS =  $(call get_val,DB_HOSTS)
 LXC := $(call get_val,LXC)
 EXEC = $(LXC) exec --cwd /SHARE
 
@@ -18,5 +21,10 @@ $(TARGET_SHELL): shell@%:
 
 .PONY: mariadb-status
 mariadb-status:
-	@for h in $(HOSTS); do \
+	@for h in $(DB_HOSTS); do \
            $(EXEC) $(PROJECT)-$$h /SHARE/mariadb-status.sh || echo "ERROR !!!!!"; done
+
+ps:
+	@for h in $(HOSTS); do \
+           echo "------- $$h --------";\
+           $(EXEC) $(PROJECT)-$$h docker compose ps; done

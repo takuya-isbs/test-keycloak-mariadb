@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -eu
 source ./common.sh
 
 # for HOST in $HOSTS; do
