@@ -37,7 +37,7 @@ INDEX_START=101
 
 INDEX=${INDEX_START}
 for HOST in $HOSTS; do
-    lxc launch $LXD_IMAGE $HOST -p $PROFILE_NAME -d eth0,ipv4.address=${IPADDR_PREFIX}.${INDEX}
+    lxc launch $LXD_IMAGE ${PROJECT}-${HOST} -p $PROFILE_NAME -d eth0,ipv4.address=${IPADDR_PREFIX}.${INDEX}
     INDEX=$((INDEX + 1))
 done
 

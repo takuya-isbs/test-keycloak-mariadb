@@ -19,7 +19,14 @@
   - NGINX で https 化、リバースプロキシ
 - Keepalived が無応答で(restart でも) 他のホストが代表に昇格
 
-## Docker などインストール
+## 必要
+
+- LXD
+- Docker
+- Disk (LXD storage pool): 200GB
+- Memory: 16GB
+
+## Docker インストール
 
 - Docker をインストール (公式手順に従う)
 - sudo usermod -a -G docker あなたのユーザ名
