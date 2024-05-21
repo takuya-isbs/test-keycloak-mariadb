@@ -48,6 +48,15 @@ install_docekr_for_ubuntu() {
     sudo apt-get install -y rsync make bash-completion less git
 }
 
+is_active() {
+    service_name="$1"
+    service_status=$(systemctl status "$service_name" | grep 'Active: ' | awk '{print $2}')
+    if [ "$service_status" = "active" ]; then
+	return 0  # True
+    fi
+    return 1
+}
+
 . /etc/os-release
 
 case $ID in
@@ -64,6 +73,6 @@ case $ID in
 esac
 
 sudo systemctl enable docker
-sudo systemctl restart docker
-
-#sudo usermod -a -G docker ubuntu
+if ! is_active docker; then
+    sudo systemctl restart docker
+fi

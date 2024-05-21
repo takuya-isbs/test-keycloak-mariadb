@@ -8,6 +8,7 @@
   - LXD コンテナは、固定 IP アドレス
   - LXD 自体は、実環境では利用しない想定
 - 3 台のホストが同一ネットワークに存在
+- それぞれの LXD コンテナホストに Docker をインストール
 - それぞれのホストにて、docker compose でアプリ一式を起動
   - docker compose で起動する一式が実環境でも動作することを想定
 - MariaDB Galera cluster で DB を冗長化
@@ -22,16 +23,8 @@
 ## 必要
 
 - LXD
-- Docker
 - Disk (LXD storage pool): 200GB
 - Memory: 16GB
-
-## Docker インストール
-
-- Docker をインストール (公式手順に従う)
-- sudo usermod -a -G docker あなたのユーザ名
-  - 一旦ログアウトして再度ログイン
-  - sudo なしで docker コマンドを使えるようになる
 
 ## 自動構築
 
@@ -77,7 +70,7 @@ TODO
 
 上記のように mariadb 起動後、各ノードにて以下を実行する。
 
-- ./up.sh
+- ./up.sh ALL
   - 処理概要
     - ホスト名から IP アドレスを推定
     - docker compose up -d --no-recreate を実行

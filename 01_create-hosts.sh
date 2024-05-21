@@ -2,7 +2,7 @@
 set -eu
 source ./common.sh
 
-lxc network create $NETWORK_NAME
+lxc network create $NETWORK_NAME || true
 lxc network edit $NETWORK_NAME <<EOF
 config:
   ipv4.address: ${IPADDR_PREFIX}.1/24
@@ -12,7 +12,7 @@ description: ""
 type: bridge
 EOF
 
-lxc profile create $PROFILE_NAME
+lxc profile create $PROFILE_NAME || true
 lxc profile edit $PROFILE_NAME <<EOF
 config:
   security.nesting: true
@@ -37,7 +37,12 @@ INDEX_START=101
 
 INDEX=${INDEX_START}
 for HOST in $HOSTS; do
-    lxc launch $LXD_IMAGE ${PROJECT}-${HOST} -p $PROFILE_NAME -d eth0,ipv4.address=${IPADDR_PREFIX}.${INDEX}
+    FULLNAME=${PROJECT}-${HOST}
+    if lxc_exist $FULLNAME; then
+	echo "exist: ${FULLNAME}"
+    else
+	lxc launch $LXD_IMAGE ${FULLNAME} -p $PROFILE_NAME -d eth0,ipv4.address=${IPADDR_PREFIX}.${INDEX}
+    fi
     INDEX=$((INDEX + 1))
 done
 

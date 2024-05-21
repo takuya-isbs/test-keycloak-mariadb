@@ -22,6 +22,9 @@ case $HOST_SUFFIX in
     kc3)
 	HOST_INDEX=103
 	;;
+    manage)
+	HOST_INDEX=104
+	;;
     *)
 	echo >&2 "Unknown host: ${HOSTNAME}"
 	exit 1
@@ -30,10 +33,12 @@ esac
 
 MY_IPADDR=${IPADDR_PREFIX}.${HOST_INDEX}
 
-if [ -n "$CONTAINER" ]; then
+if [ "$CONTAINER" = "ALL" ]; then
+    # up all without squid
+    MY_IPADDR=$MY_IPADDR docker compose up -d --no-recreate keycloak jwt-server nginx keepalived
+elif [ -n "$CONTAINER" ]; then
     # recreate (a container) mode
     MY_IPADDR=$MY_IPADDR docker compose up -d --force-recreate "$CONTAINER"
 else
-    # up all
-    MY_IPADDR=$MY_IPADDR docker compose up -d --no-recreate
+    echo "Usage: ./up.sh ALL|<CONTAINER_NAME>"
 fi
