@@ -84,6 +84,13 @@ TODO
   - ./mariadb-join.sh
   - ./mariadb-status.sh
 
+## Keycloak 設定
+
+- make shell@manage
+- ./up.sh squid
+- ./install-keycloak-api.sh
+- ./keycloak-config.sh
+
 ## squid 経由でウェブブラウザアクセス
 
 manage コンテナにて squid を起動する。
