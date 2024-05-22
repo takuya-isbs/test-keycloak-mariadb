@@ -109,7 +109,7 @@ services:
       - REALM=${JWTSERVER_REALM:-HPCI}
       - CLIENT=${JWTSERVER_CLIENT:-hpci-jwt-server}
       - USERCLAIM=${JWTSERVER_USERCLAIM:-hpci.id}
-      - SECRET=${JWTSERVER_SECRET:-fd0ff122-15b5-11ef-8529-00155dc8aa19}
+      - SECRET=${JWTSERVER_SECRET}
       - MYSQL_HOST=mariadb
       - DB=${JWTSERVER_DB}
       - USER=${JWTSERVER_DB_USER}

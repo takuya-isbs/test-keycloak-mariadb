@@ -14,6 +14,7 @@ REALM = 'HPCI'
 REALM_MASTER = 'master'
 CLIENT_SECRET = 'aRbmg6oLjjDa2OZnpy8vnKeIBJjcawpa'
 JWT_SERVER_URLS = [
+    "https://jwtserver.example.org/*",
     "https://jwt-server.test/*",
     "http://jwt-server.test/*",
     "https://jwt-server/*",
@@ -282,7 +283,7 @@ create_mapper(scope_hpci, mapper_hpciglobal_name, mapper_hpciglobal)
 
 # client
 client_public = {
-    "clientId": "hcpi-pub",
+    "clientId": "hpci-pub",
     "directAccessGrantsEnabled": True,
     "publicClient": True,
     "redirectUris": ["http://localhost:8080/"],
@@ -294,7 +295,7 @@ client_public = {
 }
 
 client_private = {
-    "clientId": "hcpi-jwt-server",
+    "clientId": "hpci-jwt-server",
     "directAccessGrantsEnabled": True,
     "publicClient": False,
     "redirectUris": JWT_SERVER_URLS,
@@ -305,8 +306,19 @@ client_private = {
     }
 }
 
-kapi.create_client(client_public, skip_exists=True)
-kapi.create_client(client_private, skip_exists=True)
+client_id_id_public = kapi.get_client_id(client_public['clientId'])
+client_id_id_private = kapi.get_client_id(client_private['clientId'])
+
+if client_id_id_public is None:
+    kapi.create_client(client_public, skip_exists=True)
+else:
+    kapi.update_client(client_id_id_public, client_public)
+
+if client_id_id_private is None:
+    kapi.create_client(client_private, skip_exists=True)
+else:
+    kapi.update_client(client_id_id_private, client_private)
+
 
 def delete_unnecessary_scope(client_id_id, target, scope_names):
     if target == 'default':
@@ -356,13 +368,10 @@ def update_client_scopes(client_id_id, default_names, optional_names):
     add_scope(client_id_id, 'optional', optional_add_names)
 
 
-client_id_id_public = kapi.get_client_id(client_public['clientId'])
-client_id_id_private = kapi.get_client_id(client_private['clientId'])
-
-d = kapi.get_client_default_client_scopes(client_id_id_public)
-print(pf(d))
-opt = kapi.get_client_optional_client_scopes(client_id_id_public)
-print(pf(opt))
+# d = kapi.get_client_default_client_scopes(client_id_id_public)
+# print(pf(d))
+# opt = kapi.get_client_optional_client_scopes(client_id_id_public)
+# print(pf(opt))
 
 update_client_scopes(client_id_id_public, DEFAULT_SCOPES, OPTIONAL_SCOPES)
 update_client_scopes(client_id_id_private, DEFAULT_SCOPES, OPTIONAL_SCOPES)
