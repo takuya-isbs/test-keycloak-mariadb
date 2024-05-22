@@ -367,6 +367,59 @@ print(pf(opt))
 update_client_scopes(client_id_id_public, DEFAULT_SCOPES, OPTIONAL_SCOPES)
 update_client_scopes(client_id_id_private, DEFAULT_SCOPES, OPTIONAL_SCOPES)
 
+# secret
+private_secret = {
+    "secret": CLIENT_SECRET,
+}
+kapi.update_client(client_id_id_private, private_secret)
+
+# authentication/flows
+def update_execution(flow_alias, display_name, requirement):
+    flows = kapi.get_authentication_flow_executions(flow_alias)
+    for flow in flows:
+        if flow['displayName'] == display_name:
+            break
+    flow_exec_update = {
+        "id": flow['id'],
+        "requirement": requirement
+    }
+    kapi.update_authentication_flow_executions(flow_exec_update, flow_alias)
+
+
+def create_authentication_flow_execution(flow_exec, flow_alias, display_name):
+    flows = kapi.get_authentication_flow_executions(flow_alias)
+    for flow in flows:
+        if flow['displayName'] == display_name:
+            # exist
+            print(f'create_authentication_flow_execution display_name={display_name}: already exists')
+            return
+    kapi.create_authentication_flow_execution(flow_exec, flow_alias)
+
+
+flow_alias_totp = "TOTP"
+flow_display_name_totp = "OTP Form"
+flow_description_totp = "TOTP after SAML IdP login"
+provider_id_otp = "auth-otp-form"
+flow_totp = {
+    "alias": flow_alias_totp,
+    "description": flow_description_totp,
+    "providerId": "basic-flow",
+    "topLevel": True,
+    "builtIn": False,
+}
+flow_exec_totp = {
+    "provider" : provider_id_otp,
+}
+
+kapi.create_authentication_flow(flow_totp, skip_exists=True)
+create_authentication_flow_execution(flow_exec_totp, flow_alias_totp, flow_display_name_totp)
+update_execution(flow_alias_totp, flow_display_name_totp, "REQUIRED")
+
+flow_alias_fbl = "first%20broker%20login"
+flow_display_name_fbl_review = "Review Profile"
+flow_display_name_fbl_create = "User creation or linking"
+update_execution(flow_alias_fbl, flow_display_name_fbl_review, "DISABLED")
+update_execution(flow_alias_fbl, flow_display_name_fbl_create, "DISABLED")
 
 
 print('### DONE ####')
