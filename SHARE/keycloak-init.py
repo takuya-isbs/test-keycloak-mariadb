@@ -13,8 +13,17 @@ ADMIN_PASSWORD = 'admin'
 REALM = 'HPCI'
 REALM_MASTER = 'master'
 CLIENT_SECRET = 'aRbmg6oLjjDa2OZnpy8vnKeIBJjcawpa'
+JWT_SERVER_URLS = [
+    "https://jwt-server.test/*",
+    "http://jwt-server.test/*",
+    "https://jwt-server/*",
+    "http://jwt-server/*",
+    "https://jwt-server2/*",
+    "http://jwt-server2/*",
+]
+DEFAULT_SCOPES = ['scitokens', 'openid', 'offline_access', 'hpci']
+OPTIONAL_SCOPES = []
 
-#VERIFY = False  #TODO True
 VERIFY = True
 
 def E(*args):
@@ -272,7 +281,92 @@ create_mapper(scope_hpci, mapper_hpciid_name, mapper_hpciid)
 create_mapper(scope_hpci, mapper_hpciglobal_name, mapper_hpciglobal)
 
 # client
+client_public = {
+    "clientId": "hcpi-pub",
+    "directAccessGrantsEnabled": True,
+    "publicClient": True,
+    "redirectUris": ["http://localhost:8080/"],
+    "attributes": {
+        "oauth2.device.authorization.grant.enabled": True,
+        "client.offline.session.idle.timeout": 86400,
+        "client.offline.session.max.lifespan": 604800,
+    }
+}
+
+client_private = {
+    "clientId": "hcpi-jwt-server",
+    "directAccessGrantsEnabled": True,
+    "publicClient": False,
+    "redirectUris": JWT_SERVER_URLS,
+    "attributes": {
+        "oauth2.device.authorization.grant.enabled": True,
+        "client.offline.session.idle.timeout": 86400,
+        "client.offline.session.max.lifespan": 31536000,
+    }
+}
+
+kapi.create_client(client_public, skip_exists=True)
+kapi.create_client(client_private, skip_exists=True)
+
+def delete_unnecessary_scope(client_id_id, target, scope_names):
+    if target == 'default':
+        scopes = kapi.get_client_default_client_scopes(client_id_id)
+    elif target == 'optional':
+        scopes = kapi.get_client_optional_client_scopes(client_id_id)
+    print(f'DEBUG target={target} scopes=' + pf(scopes))
+    scope_name_set = set(scope_names)
+    exist_names = []
+    for scope in scopes:
+        name = scope['name']
+        if name in scope_name_set:
+            print(f'DEBUG leave: target={target} name={name} scope=' + pf(scope))
+            exist_names.append(name)
+        else:
+            print(f'DEBUG delete: target={target} name={name} scope=' + pf(scope))
+            if target == 'default':
+                kapi.delete_client_default_client_scope(client_id_id, scope['id'])
+            elif target == 'optional':
+                kapi.delete_client_optional_client_scope(client_id_id, scope['id'])
+    return exist_names
+
+
+def add_scope(client_id_id, target, add_names):
+    for scope_name in add_names:
+        scope = kapi.get_client_scope_by_name(scope_name)
+        print(f'DEBUG add: target={target} scope[{scope_name}]=' + pf(scope))
+        scope_id = scope['id']
+        payload = {
+            "realm": REALM,
+            "client": client_id_id,
+            "clientScopeId": scope_id,
+        }
+        if target == 'default':
+            kapi.add_client_default_client_scope(client_id_id, scope_id, payload)
+        elif target == 'optional':
+            kapi.add_client_optional_client_scope(client_id_id, scope_id, payload)
+
+
+def update_client_scopes(client_id_id, default_names, optional_names):
+    print(f'------------- update client scopes: {client_id_id}')
+    default_exist_names = delete_unnecessary_scope(client_id_id, 'default', default_names)
+    optional_exist_names = delete_unnecessary_scope(client_id_id, 'optional', optional_names)
+    default_add_names = list(set(default_names) - set(default_exist_names))
+    optional_add_names = list(set(optional_names) - set(optional_exist_names))
+    add_scope(client_id_id, 'default', default_add_names)
+    add_scope(client_id_id, 'optional', optional_add_names)
+
+
+client_id_id_public = kapi.get_client_id(client_public['clientId'])
+client_id_id_private = kapi.get_client_id(client_private['clientId'])
+
+d = kapi.get_client_default_client_scopes(client_id_id_public)
+print(pf(d))
+opt = kapi.get_client_optional_client_scopes(client_id_id_public)
+print(pf(opt))
+
+update_client_scopes(client_id_id_public, DEFAULT_SCOPES, OPTIONAL_SCOPES)
+update_client_scopes(client_id_id_private, DEFAULT_SCOPES, OPTIONAL_SCOPES)
 
 
 
-print('DONE')
+print('### DONE ####')
