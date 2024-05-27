@@ -1,0 +1,31 @@
+services:
+  registry-dockerhub:
+    image: registry:2
+    restart: always
+    environment:
+      #- REGISTRY_LOGLEVEL=debug
+      - REGISTRY_LOGLEVEL=info
+      - REGISTRY_PROXY_REMOTEURL="https://registry-1.docker.io"
+      - REGISTRY_PROXY_USERNAME=${DOCKER_USER:-}
+      - REGISTRY_PROXY_PASSWORD=${DOCKER_PASS:-}
+    ports:
+      - "50000:5000"
+
+  registry-quay:
+    image: registry:2
+    restart: always
+    environment:
+      #- REGISTRY_LOGLEVEL=debug
+      - REGISTRY_LOGLEVEL=info
+      - REGISTRY_PROXY_REMOTEURL="https://quay.io"
+      #- REGISTRY_PROXY_USERNAME=$QUAY_USER
+      #- REGISTRY_PROXY_PASSWORD=$QUAY_PASS
+    ports:
+      - "50001:5000"
+
+  squid:
+    image: ubuntu/squid
+    ports:
+      - "0.0.0.0:13128:3128"
+    volumes:
+      - ./squid-allow-ssl-ports.conf:/etc/squid/conf.d/allow-ssl-ports.conf:ro

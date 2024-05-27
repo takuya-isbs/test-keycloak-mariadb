@@ -19,6 +19,12 @@
   - Keepalived (VRRP) 利用
   - NGINX で https 化、リバースプロキシ
 - Keepalived が無応答で(restart でも) 他のホストが代表に昇格
+- manage コンテナ
+  - squid を実行
+    - http proxy をここに設定して、このネットワーク内の名前でブラウザアクセス用
+  - docker registry (proxy) を実行
+    - dockerhub, quay.io からのダウンロードをキャッシュ
+    - 外部に設置しても良い
 
 ## 必要
 
@@ -26,12 +32,60 @@
 - Disk (LXD storage pool): 200GB
 - Memory: 16GB
 
+## (オプション) Docker registry proxy
+
+manage LXD コンテナに docker registry proxy が動作する。
+
+別ホストに構築する場合は以下のように構築する。
+
+SHARE/compose-manage.yml を参考にして、
+新規ディレクトリに compose.yml を作成
+
+.env を作成 (Docker にログインする場合にだけ設定すれば良い)
+
+```
+DOCKER_USER=...
+DOCKER_PASS=...
+```
+
+起動
+
+```
+docker compose up -d
+```
+
+停止
+
+```
+docker compose down
+または volume を消す場合
+docker compose down -v
+```
+
+## 設定
+
+必要に応じて config.sh ファイルを作成する。
+
+例 (192.168.0.10 が Docker registry proxy)
+
+```bash
+# HTTP プロキシサーバを利用して LXD, Docker を利用する場合
+HTTP_PROXY=http://192.168.0.10:3142
+HTTPS_PROXY=http://192.168.0.10:3142
+NO_PROXY=192.168.0.10
+
+# 自前で registry proxy を立てる場合
+#DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
+```
+
 ## 自動構築
 
 TODO
 
 ## ステップ実行
 
+- ./00_init.sh
+  - LXD 自体に http_proxy の設定
 - ./01_create-hosts.sh
 - ./02_install.sh
 - ./03_ca.sh
@@ -47,8 +101,8 @@ TODO
 - 起動を確認:
   - ./mariadb-status.sh
 - (バックアップデータから戻す場合) ./mariadb-restore.sh ./BACKUP/ファイル名
-- jwt-server 用のユーザ追加
-   - docker compose exec mariadb sh /mariadb-add-jwt-server.sh
+- ./mariadb-init-jwt-server.sh
+  - jwt-server 用のユーザを DB に追加
 
 ### 追加 DB ノード構築・参加 (2台目以降)
 
@@ -166,6 +220,7 @@ mariadb 以外は以下の方法で再構築する。
 
 ### ウェブブラウザ
 
+- (keycloak + mariadb フェイルオーバーの動作確認)
 - squid 経由で https://keycloak.example.org に接続
 - admin:admin でログイン
 - レルム作成、ユーザ作成、ユーザ詳細画面表示したままにしておく
@@ -177,3 +232,12 @@ mariadb 以外は以下の方法で再構築する。
 - 10.60.204.11 のアドレスが他のホストに移転されたことを確認
 - ユーザ詳細画面をリロード
 - 再度ログイン画面が出ずにユーザ詳細画面のままであれば成功
+- (jwt-server の動作確認)
+- HPCI レルムにユーザを作成、属性に hpci.id を設定して保存
+- squid 経由で https://jwtserver.example.org に接続
+- make shell@manage にて jwt-agent を起動
+- 10.60.204.11 のアドレスも追加でついているコンテナで操作
+  - docker compose restart keepalived
+  - ./myip.sh
+- 10.60.204.11 のアドレスが他のホストに移転されたことを確認
+- jwt-agent が停止しないことを確認

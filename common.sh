@@ -1,12 +1,5 @@
-PROJECT="testkc"
-LXD_IMAGE=ubuntu:22.04
-IPADDR_PREFIX=10.60.204
-HOST1="${PROJECT}-kc1"
-DB_HOSTS="kc1 kc2 kc3"
-HOSTS="${DB_HOSTS} manage"
-NETWORK_NAME=$PROJECT
-PROFILE_NAME=${PROJECT}-prof
-LXC=lxc
+source ./default.sh
+[ -f ./config.sh ] && source ./config.sh
 
 lxc_exist() {
     len=$($LXC ls -f compact $1 | wc -l)
@@ -33,5 +26,5 @@ exec_para() {
     done
 }
 
-set -eu
+set -eu -o pipefail
 set -x

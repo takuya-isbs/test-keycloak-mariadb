@@ -1,4 +1,6 @@
 *~
+/config.sh
+/SHARE/_config.sh
 /SHARE/certs/minica-key.pem
 /SHARE/certs/minica.pem
 /SHARE/certs/dummy.example.org/

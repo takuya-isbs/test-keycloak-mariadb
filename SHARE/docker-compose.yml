@@ -1,5 +1,5 @@
 x-common: &common
-  restart: "no"
+  restart: "unless-stopped"
   init: true
   extra_hosts:
     - "keycloak.example.org keycloak:10.60.204.11"
@@ -58,8 +58,9 @@ services:
     # SEE: https://github.com/keycloak/keycloak-containers/blob/15.0.2/docker-compose-examples/keycloak-mariadb-jdbc-ping.yml
     # SEE: https://github.com/keycloak/keycloak-containers/tree/15.0.2/server
     hostname: keycloak
-    image: quay.io/keycloak/keycloak:15.0.2
-    #image: quay.io/keycloak/keycloak:19.0.3-legacy
+    #image: quay.io/keycloak/keycloak:15.0.2
+    image: keycloak/keycloak:15.0.2  # to quary.io via registory proxy
+    #image: keycloak/keycloak:19.0.3-legacy  # to quary.io via registory proxy
     networks:
       mynet:
     ports:
@@ -105,6 +106,7 @@ services:
     volumes:
       - ./certs/minica.pem:/usr/share/pki/ca-trust-source/anchors/minica.crt
     environment:
+      - CATALINA_OPTS="-Xmx512m"
       - KEYCLOAK=${JWTSERVER_KEYCLOAK_HOSTNAME:-keycloak.example.org}
       - REALM=${JWTSERVER_REALM:-HPCI}
       - CLIENT=${JWTSERVER_CLIENT:-hpci-jwt-server}
@@ -146,15 +148,15 @@ services:
       KEEPALIVED_VIRTUAL_IPS: 10.60.204.11/24
     <<: [*common]
 
-  squid:
-    image: ubuntu/squid
-    networks:
-      mynet:
-    ports:
-      - "0.0.0.0:13128:3128"
-    volumes:
-      - ./squid-allow-ssl-ports.conf:/etc/squid/conf.d/allow-ssl-ports.conf:ro
-    <<: [*common]
+  # squid:
+  #   image: ubuntu/squid
+  #   networks:
+  #     mynet:
+  #   ports:
+  #     - "0.0.0.0:13128:3128"
+  #   volumes:
+  #     - ./squid-allow-ssl-ports.conf:/etc/squid/conf.d/allow-ssl-ports.conf:ro
+  #   <<: [*common]
 
 volumes:
   mariadb_data:

@@ -2,18 +2,25 @@
 set -eu
 source ./common.sh
 
-lxc network create $NETWORK_NAME || true
-lxc network edit $NETWORK_NAME <<EOF
+$LXC network create $NETWORK_NAME || true
+
+MAC=$(ip a show $NETWORK_NAME | awk '/link\/ether/ {print $2}')
+IPV6=$(./ula_generator.py ${MAC} | grep "First IPv6 Address" | awk '{print $4}')
+
+$LXC  network edit $NETWORK_NAME <<EOF
 config:
   ipv4.address: ${IPADDR_PREFIX}.1/24
   ipv4.dhcp.ranges: ${IPADDR_PREFIX}.200-${IPADDR_PREFIX}.250
   ipv4.nat: "true"
+  ipv6.address: ${IPV6}
+  ipv6.dhcp: "true"
+  ipv6.nat: "true"
 description: ""
 type: bridge
 EOF
 
-lxc profile create $PROFILE_NAME || true
-lxc profile edit $PROFILE_NAME <<EOF
+$LXC profile create $PROFILE_NAME || true
+$LXC profile edit $PROFILE_NAME <<EOF
 config:
   security.nesting: true
   security.privileged: true
@@ -41,10 +48,10 @@ for HOST in $HOSTS; do
     if lxc_exist $FULLNAME; then
 	echo "exist: ${FULLNAME}"
     else
-	lxc launch $LXD_IMAGE ${FULLNAME} -p $PROFILE_NAME -d eth0,ipv4.address=${IPADDR_PREFIX}.${INDEX}
+	$LXC launch $LXD_IMAGE ${FULLNAME} -p $PROFILE_NAME -d eth0,ipv4.address=${IPADDR_PREFIX}.${INDEX}
     fi
     INDEX=$((INDEX + 1))
 done
 
 sleep 5
-lxc ls ${PROJECT}-
+$LXC ls ${PROJECT}-

@@ -1,3 +1,4 @@
+SHELL := /bin/bash
 COMMON := $(realpath common.sh)
 
 define get_val
