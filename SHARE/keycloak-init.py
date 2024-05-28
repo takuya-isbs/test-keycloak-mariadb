@@ -311,11 +311,13 @@ client_id_id_private = kapi.get_client_id(client_private['clientId'])
 
 if client_id_id_public is None:
     kapi.create_client(client_public, skip_exists=True)
+    client_id_id_public = kapi.get_client_id(client_public['clientId'])
 else:
     kapi.update_client(client_id_id_public, client_public)
 
 if client_id_id_private is None:
     kapi.create_client(client_private, skip_exists=True)
+    client_id_id_private = kapi.get_client_id(client_private['clientId'])
 else:
     kapi.update_client(client_id_id_private, client_private)
 
