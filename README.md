@@ -115,13 +115,12 @@ TODO
   - 2台目以降参加する場合
 - 起動を確認:
   - ./mariadb-status.sh
-  - 3 台とも Synced になるまで確認して待つ
 - mariadb のみ動作確認:
   - ./mariadb-benchmark.sh
-
-ホスト OS にて全体確認
-
-- make mariadb-status
+- ホスト OS にて全体確認:
+  - make mariadb-status
+  - 3 台とも Synced になるまで確認して待つ
+  - ctrl-c で停止
 
 ### mariadb 以外のコンテナ起動
 
@@ -141,7 +140,6 @@ TODO
 ## Keycloak 設定
 
 - make shell@manage
-- ./up.sh squid
 - ./install-keycloak-api.sh
 - ./keycloak-config.sh
 
@@ -218,26 +216,24 @@ mariadb 以外は以下の方法で再構築する。
 
 ## テスト
 
-### ウェブブラウザ
-
 - (keycloak + mariadb フェイルオーバーの動作確認)
-- squid 経由で https://keycloak.example.org に接続
-- admin:admin でログイン
-- レルム作成、ユーザ作成、ユーザ詳細画面表示したままにしておく
-- lxc ls で IPアドレスを確認
-  - ./myip.sh を LXD コンテナそれぞれで実行するでも良い
-- 10.60.204.11 のアドレスも追加でついているコンテナで操作
-  - docker compose restart keepalived
-  - ./myip.sh
-- 10.60.204.11 のアドレスが他のホストに移転されたことを確認
-- ユーザ詳細画面をリロード
-- 再度ログイン画面が出ずにユーザ詳細画面のままであれば成功
+  - squid 経由で https://keycloak.example.org に接続 (Web ブラウザ)
+  - admin:admin でログイン
+  - レルム作成、ユーザ作成、ユーザ詳細画面表示したままにしておく
+  - lxc ls で IPアドレスを確認
+    - ./myip.sh を LXD コンテナそれぞれで実行するでも良い
+  - 10.60.204.11 のアドレスも追加でついているコンテナで操作
+    - docker compose restart keepalived
+    - ./myip.sh
+  - 10.60.204.11 のアドレスが他のホストに移転されたことを確認
+  - ユーザ詳細画面をリロード
+  - 再度ログイン画面が出ずにユーザ詳細画面のままであれば成功
 - (jwt-server の動作確認)
-- HPCI レルムにユーザを作成、属性に hpci.id を設定して保存
-- squid 経由で https://jwtserver.example.org に接続
-- make shell@manage にて jwt-agent を起動
-- 10.60.204.11 のアドレスも追加でついているコンテナで操作
-  - docker compose restart keepalived
-  - ./myip.sh
-- 10.60.204.11 のアドレスが他のホストに移転されたことを確認
-- jwt-agent が停止しないことを確認
+  - HPCI レルムにユーザを作成、属性に hpci.id を設定して保存
+  - squid 経由で https://jwtserver.example.org に接続 (Web ブラウザ)
+  - make shell@manage にて jwt-agent を起動
+  - 10.60.204.11 のアドレスも追加でついているコンテナで操作
+    - docker compose restart keepalived
+    - ./myip.sh
+  - 10.60.204.11 のアドレスが他のホストに移転されたことを確認
+  - jwt-agent が停止しないことを確認
