@@ -34,8 +34,9 @@ esac
 MY_IPADDR=${IPADDR_PREFIX}.${HOST_INDEX}
 
 if [ "$CONTAINER" = "ALL" ]; then
-    # up all without squid
-    MY_IPADDR=$MY_IPADDR docker compose up -d --no-recreate keycloak jwt-server nginx keepalived
+    MY_IPADDR=$MY_IPADDR docker compose up -d --no-recreate jwt-server nginx keepalived keycloak
+elif [ "$CONTAINER" = "ALL-OLD" ]; then
+    MY_IPADDR=$MY_IPADDR docker compose up -d --no-recreate jwt-server nginx keepalived keycloak-old
 elif [ -n "$CONTAINER" ]; then
     # recreate (a container) mode
     MY_IPADDR=$MY_IPADDR docker compose up -d --force-recreate "$CONTAINER"

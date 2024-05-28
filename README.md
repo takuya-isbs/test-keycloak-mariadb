@@ -237,3 +237,13 @@ mariadb 以外は以下の方法で再構築する。
     - ./myip.sh
   - 10.60.204.11 のアドレスが他のホストに移転されたことを確認
   - jwt-agent が停止しないことを確認
+
+## アップデート
+
+- ./mariadb-backup.sh
+- Keycloak の更新 (WildFly版[-v16] to Quarkus版[v17-])
+  - 新規構築する際 ./up.sh ALL-OLD で構築
+    - ./mariadb-restore.sh で戻しても良い。
+  - docker compose rm -sf keycloak-old
+  - ./up.sh keycloak
+- TODO MariaDB の更新

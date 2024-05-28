@@ -53,8 +53,8 @@ services:
       - JWTSERVER_DB_PASSWORD=${JWTSERVER_DB_PASSWORD}
     <<: [*common]
 
-  # for legacy version
-  keycloak:
+  # Legacy Keycloak (WildFly)
+  keycloak-old:
     # SEE: https://github.com/keycloak/keycloak-containers/blob/15.0.2/docker-compose-examples/keycloak-mariadb-jdbc-ping.yml
     # SEE: https://github.com/keycloak/keycloak-containers/tree/15.0.2/server
     hostname: keycloak
@@ -93,9 +93,49 @@ services:
       - ./JDBC_PING.cli:/opt/jboss/tools/cli/jgroups/discovery/JDBC_PING.cli:ro
     <<: [*common]
 
-  # TODO new keycloak (Quarkus)
-  # https://keycloak.discourse	.group/t/use-of-jdbc-ping-with-keycloak-17-quarkus-distro/13571
+  # New Keycloak (Quarkus)
+  # https://keycloak.discourse.group/t/use-of-jdbc-ping-with-keycloak-17-quarkus-distro/13571
   # https://gist.github.com/xgp/768eea11f92806b9c83f95902f7f8f80
+  # https://qiita.com/uturned0/items/e9256c48ccba6f588d79
+  keycloak:
+    hostname: keycloak
+    #image: quay.io/keycloak/keycloak:24
+    #image: keycloak/keycloak:24  # to quary.io via registory proxy
+    build: ./keycloak-quarkus
+    networks:
+      mynet:
+    ports:
+      - 8080:8080
+      - 7600:7600
+    environment:
+      # https://www.keycloak.org/server/all-config?options-filter=all
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_PASSWORD:-admin}
+      - KC_DB=mariadb
+      #- KC_DB_URL=jdbc:mysql://mariadb:3306/keycloak  # not work...??
+      - KC_DB_URL_HOST=mariadb
+      - KC_DB_URL_DATABASE=keycloak
+      - KC_DB_URL_PORT=3306
+      - KC_DB_USERNAME=keycloak
+      - KC_DB_PASSWORD=${MARIADB_PASSWORD:-keycloak_password}
+      - KC_TRANSACTION_XA_ENABLED=false
+      # cache
+      # TODO https://gist.github.com/xgp/768eea11f92806b9c83f95902f7f8f80
+      - KC_CACHE=ispn
+      - KC_CACHE_STACK=tcp
+      # for reverse proxy
+      - KC_PROXY=edge
+      - KC_PROXY_ADDRESS_FORWARDING=true
+      - KC_HOSTNAME_STRICT=false
+      - KC_HOSTNAME_STRICT_HTTPS=false
+      - KC_HTTP_ENABLED=true
+      - KC_HTTP_PORT=8080
+      - KC_HTTP_RELATIVE_PATH=/auth
+      - KC_HEALTH_ENABLED=true
+      - KC_METRICS_ENABLED=true
+      - KC_LOG_LEVEL=INFO,org.infinispan:DEBUG,org.jgroups:DEBUG
+      #- KC_LOG_LEVEL=DEBUG,org.infinispan:DEBUG,org.jgroups:DEBUG
+    <<: [*common]
 
   # jwt-server
   jwt-server:
