@@ -1,3 +1,10 @@
+x-common: &common
+  restart: "unless-stopped"
+  init: true
+  extra_hosts:
+    - "keycloak.example.org keycloak:10.60.204.11"
+    - "jwtserver.example.org jwtserver:10.60.204.11"
+
 services:
   registry-dockerhub:
     image: registry:2
@@ -10,6 +17,7 @@ services:
       - REGISTRY_PROXY_PASSWORD=${DOCKER_PASS:-}
     ports:
       - "50000:5000"
+    <<: [*common]
 
   registry-quay:
     image: registry:2
@@ -22,6 +30,7 @@ services:
       #- REGISTRY_PROXY_PASSWORD=$QUAY_PASS
     ports:
       - "50001:5000"
+    <<: [*common]
 
   squid:
     image: ubuntu/squid
@@ -29,3 +38,4 @@ services:
       - "0.0.0.0:13128:3128"
     volumes:
       - ./squid-allow-ssl-ports.conf:/etc/squid/conf.d/allow-ssl-ports.conf:ro
+    <<: [*common]
