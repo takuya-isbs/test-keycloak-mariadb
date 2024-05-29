@@ -5,8 +5,8 @@ source ./common.sh
 CONF=./SHARE/_config.sh
 
 cat <<EOF > $CONF
-DOCKER_USER=$DOCKER_USER
-DOCKER_PASS=$DOCKER_PASS
+DOCKER_USER=${DOCKER_USER:-}
+DOCKER_PASS=${DOCKER_PASS:-}
 EOF
 
 exec_para "$HOSTS" sh /SHARE/install-docker.sh
