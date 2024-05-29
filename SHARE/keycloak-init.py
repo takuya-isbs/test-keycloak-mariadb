@@ -215,7 +215,7 @@ mapper_ver = {
     "consentRequired": False,
     "protocolMapper": "oidc-hardcoded-claim-mapper",
     "config": {
-        "claim.name": mapper_nbf_name,
+        "claim.name": mapper_ver_name,
         "claim.value": "scitokens:2.0",
         "jsonType.label": "String",
         "userinfo.token.claim": True,
