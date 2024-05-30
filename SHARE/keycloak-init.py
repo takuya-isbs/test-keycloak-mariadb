@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# for jwt-server
+
 import sys
 import json
 from pprint import pformat as pf

@@ -135,6 +135,7 @@ services:
       - KC_METRICS_ENABLED=true
       - KC_LOG_LEVEL=INFO,org.infinispan:DEBUG,org.jgroups:DEBUG
       #- KC_LOG_LEVEL=DEBUG,org.infinispan:DEBUG,org.jgroups:DEBUG
+      #- KC_LOG_LEVEL=INFO,org.keycloak.protocol.oidc.grants:TRACE
     <<: [*common]
 
   # jwt-server
