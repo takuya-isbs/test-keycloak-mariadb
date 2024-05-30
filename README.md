@@ -7,18 +7,18 @@
 - LXD を利用し、実ホストと実ネットワークを想定した環境を構築
   - LXD コンテナは、固定 IP アドレス
   - LXD 自体は、実環境では利用しない想定
-- 3 台のホストが同一ネットワークに存在
-- それぞれの LXD コンテナホストに Docker をインストール
-- それぞれのホストにて、docker compose でアプリ一式を起動
+- 3 台のホスト相当 (LXD コンテナノード) が同一ネットワークに存在
+- それぞれの LXD コンテナノードに Docker をインストール
+- それぞれのノードにて、docker compose でアプリ一式を起動
   - docker compose で起動する一式が実環境でも動作することを想定
 - MariaDB Galera cluster で DB を冗長化
   - 停止しないことが前提で、再起動はできない
   - 破損・停止した場合は再所属手続きが必要
-- それぞれのホストで Keycloak が動作
+- それぞれのノードで Keycloak が動作
 - 代表アドレスで Keycloak にアクセス
   - Keepalived (VRRP) 利用
   - NGINX で https 化、リバースプロキシ
-- Keepalived が無応答で(restart でも) 他のホストが代表に昇格
+- Keepalived が無応答で(restart でも) 他のノードが代表に昇格
 - manage コンテナ
   - squid を実行
     - http proxy をここに設定して、このネットワーク内の名前でブラウザアクセス用
@@ -34,12 +34,13 @@
 
 ## (オプション) Docker registry proxy
 
-manage LXD コンテナに docker registry proxy が動作する。
+manage コンテナにてdocker registry proxy が標準で動作する。
+dockerhub (docker.io) と quay.io のイメージをキャッシュする。
 
-別ホストに構築する場合は以下のように構築する。
+それとは別のホストに docker registry proxy を構築する場合は以下のように構築する。
 
 SHARE/compose-manage.yml を参考にして、
-新規ディレクトリに compose.yml を作成
+新規ディレクトリに compose.yml を作成する。
 
 .env を作成 (Docker にログインする場合にだけ設定すれば良い)
 
@@ -66,23 +67,19 @@ docker compose down -v
 
 必要に応じて config.sh ファイルを作成する。
 
-例 (192.168.0.10 が Docker registry proxy)
+例 (192.168.0.10 にて、apt-cacher-ng, Docker registry proxy が動作)
 
 ```bash
-# HTTP プロキシサーバを利用して LXD, Docker を利用する場合
+## HTTP プロキシサーバを利用して LXD, Docker を利用する場合
 HTTP_PROXY=http://192.168.0.10:3142
 HTTPS_PROXY=http://192.168.0.10:3142
 NO_PROXY=192.168.0.10
 
-# 自前で registry proxy を立てる場合
-#DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
+## 自前で registry proxy を設置した場合
+DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
 ```
 
-## 自動構築
-
-TODO
-
-## ステップ実行
+## 構築手順
 
 - ./00_init.sh
   - LXD 自体に http_proxy の設定
@@ -93,14 +90,16 @@ TODO
 ### 初期 DB ノード構築 (初期起動ノード)
 
 - make shell@kc1
-- (必要に応じて docker login を実行する)
-- (イメージ再ビルドする場合) docker compose build
+- (option: Dockerfile イメージを再ビルドする場合)
+  - docker compose build
 - ./mariadb-stop.sh
 - ./mariadb-new.sh
   - 初回、クラスタ作成時のみ
 - 起動を確認:
   - ./mariadb-status.sh
-- (バックアップデータから戻す場合) ./mariadb-restore.sh ./BACKUP/ファイル名
+- (option: バックアップデータから戻す場合)
+  - (このタイミングでリストアする)
+  - ./mariadb-restore.sh ./BACKUP/ファイル名
 - ./mariadb-init-jwt-server.sh
   - jwt-server 用のユーザを DB に追加
 
@@ -108,8 +107,8 @@ TODO
 
 - `make shell@kc2`
   - or `make shell@kc3`
-- (必要に応じて docker login を実行する)
-- (イメージ再ビルドする場合) docker compose build
+- (option: イメージ再ビルドする場合)
+  - docker compose build
 - ./mariadb-stop.sh
 - ./mariadb-join.sh
   - 2台目以降参加する場合
@@ -137,7 +136,11 @@ TODO
   - ./mariadb-join.sh
   - ./mariadb-status.sh
 
-## Keycloak 設定
+## Keycloak 初期設定
+
+jwt-server が動作するための設定を Keycloak に投入する。
+
+以下の手順では、Keycloak の Web UI を操作せずに、Keycloak の API を Python プログラムから呼び出して設定をおこなう。
 
 - make shell@manage
 - ./install-keycloak-api.sh
@@ -145,11 +148,11 @@ TODO
 
 ## squid 経由でウェブブラウザアクセス
 
-manage コンテナにて squid を起動する。
+squid (http プロキシ) が manage コンテナで動作している。
 
-- make shell@manage
-- ./up.sh squid
-- exit
+その squid を経由して、手元の Web ブラウザを利用することで、LXD コンテナと同じネットワークに所属したようなアクセスができる。
+
+LXD ネットワーク内のホスト名の名前解決を squid コンテナ側でおこなうことで、テスト用のホスト名 *.example.org を利用できる。
 
 manage コンテナの eth0 IPアドレスを lxc ls で確認しておく。
 (172.* ではないアドレス)
@@ -163,8 +166,10 @@ LocalForward 57000 {manageコンテナのIPアドレス}:13128
 ```
 
 - ssh dev1
-- SwitchyOmega の設定 localhost 57000 を追加
-- keycloak.example.org 上記で追加した設定に関連づけて auto switch に追加
+- Webブラウザに SwitchyOmega の拡張をインストール
+- SwitchyOmega の設定
+  - 新規追加: localhost 57000
+  - auto swich 設定: *.example.org に対して、上記で追加した設定に関連づけ
 
 ## 単体ノード停止・再開
 
@@ -173,16 +178,25 @@ LocalForward 57000 {manageコンテナのIPアドレス}:13128
 
 ## 全ノード停止・再開
 
-- kc3, kc2, kc1 の順で一つずつ mariadb コンテナ停止
+- 停止手順
+  - ./mariadb-backup.sh を念のため実行
+  - kc3, kc2, kc1 の順で一つずつ mariadb コンテナ停止
   - ./mariadb-stop.sh
   - コンテナは消えるが volume は残る
-- ./mariadb-show-bootstrap.sh が safe_to_bootstrap: 1 となるホストを探す
+
+- 起動手順
+  - ./mariadb-show-bootstrap.sh が safe_to_bootstrap: 1 となるホストを探す
   - 最後に停止したコンテナが 1 になる
   - ./mariadb-stop.sh を念のため実行
   - ./mariadb-new.sh を実行
-- その他ホスト
+
+- その他ノード
   - ./mariadb-stop.sh を念のため実行
   - ./mariadb-join.sh を実行
+
+- 別の方法
+  - 各ノードの DB データを破棄 (後述)
+  - バックアップデータからリストアして起動する
 
 ## 単体 DB データ破棄(故障想定)
 
@@ -225,7 +239,7 @@ mariadb 以外は以下の方法で再構築する。
   - 10.60.204.11 のアドレスも追加でついているコンテナで操作
     - docker compose restart keepalived
     - ./myip.sh
-  - 10.60.204.11 のアドレスが他のホストに移転されたことを確認
+  - 10.60.204.11 のアドレスが他のノードに移転されたことを確認
   - ユーザ詳細画面をリロード
   - 再度ログイン画面が出ずにユーザ詳細画面のままであれば成功
 - (jwt-server の動作確認)
@@ -235,15 +249,18 @@ mariadb 以外は以下の方法で再構築する。
   - 10.60.204.11 のアドレスも追加でついているコンテナで操作
     - docker compose restart keepalived
     - ./myip.sh
-  - 10.60.204.11 のアドレスが他のホストに移転されたことを確認
+  - 10.60.204.11 のアドレスが他のノードに移転されたことを確認
   - jwt-agent が停止しないことを確認
 
 ## アップデート
 
 - ./mariadb-backup.sh
-- Keycloak の更新 (WildFly版[-v16] to Quarkus版[v17-])
-  - 新規構築する際 ./up.sh ALL-OLD で構築
-    - ./mariadb-restore.sh で戻しても良い。
+- Keycloak の更新
+  - SHARE/keycloak-quarkus/Dockerfile を編集
+    - ARG KEYCLOAK_IMAGE=keycloak/keycloak:24.0 の値を変更
+  - ./up.sh keycloak
+- Keycloak の大幅更新を試す
+  - (WildFly版[~v16] から Quarkus版[v17~])
+  - 新規構築時: ./up.sh ALL-OLD で全体を一旦構築
   - docker compose rm -sf keycloak-old
   - ./up.sh keycloak
-- TODO MariaDB の更新
