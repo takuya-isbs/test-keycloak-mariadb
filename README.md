@@ -12,8 +12,9 @@
 - それぞれのノードにて、docker compose でアプリ一式を起動
   - docker compose で起動する一式が実環境でも動作することを想定
 - MariaDB Galera cluster で DB を冗長化
-  - 停止しないことが前提
+  - 全ノード停止しない前提
   - 破損したら再構築して再所属すれば復旧
+  - 全ノード停止した場合、DB バックアップデータから再構築可能
 - それぞれのノードで Keycloak が動作
 - それぞれのノードで jwt-server が動作
   - https://github.com/oss-tsukuba/jwt-server
@@ -36,7 +37,7 @@
 
 ## (オプション) Docker registry proxy
 
-manage コンテナにてdocker registry proxy が標準で動作する。
+manage コンテナにて docker registry proxy が標準で動作する。
 dockerhub (docker.io) と quay.io のイメージをキャッシュする。
 
 それとは別のホストに docker registry proxy を構築する場合は以下のように構築する。
@@ -65,7 +66,7 @@ docker compose down
 docker compose down -v
 ```
 
-## 設定
+## 設定ファイル
 
 必要に応じて config.sh ファイルを作成する。
 
@@ -81,13 +82,20 @@ NO_PROXY=192.168.0.10
 DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
 ```
 
-## 構築手順
+## 環境構築手順
 
+- LXD のインストール (ここでは説明省略)
+  - 以下の手順では LXD のストレージプールは default を使用する。
+  - LXD の profile, network が自動作成される。
 - ./00_init.sh
-  - LXD 自体に http_proxy の設定
+  - LXD 自体に http_proxy を設定
 - ./01_create-hosts.sh
+  - LXD コンテナ作成
 - ./02_install.sh
+  - LXD コンテナ内に Docker などをインストール
 - ./03_ca.sh
+  - テスト用の CA と証明書が作成される。
+  - 有効期限が切れたら、SHARE/certs/ 以下を削除し、再度作成が必要
 
 ### 初期 DB ノード構築 (初期起動ノード)
 
@@ -96,7 +104,7 @@ DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
   - docker compose build
 - ./mariadb-stop.sh
 - ./mariadb-new.sh
-  - 初回、クラスタ作成時のみ
+  - 初回、DB クラスタ作成時のみ実行する。
 - 起動を確認:
   - ./mariadb-status.sh
 - (option: バックアップデータから戻す場合)
@@ -104,6 +112,7 @@ DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
   - ./mariadb-restore.sh ./BACKUP/ファイル名
 - ./mariadb-init-jwt-server.sh
   - jwt-server 用のユーザを DB に追加
+  - 何度実行しても問題ない。
 
 ### 追加 DB ノード構築・参加 (2台目以降)
 
@@ -114,12 +123,16 @@ DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
 - ./mariadb-stop.sh
 - ./mariadb-join.sh
   - 2台目以降参加する場合
+  - 間違えて ./mariadb-new.sh を実行した場合
+    - 所属できない
+    - 他のノードに影響は無い
 - 起動を確認:
   - ./mariadb-status.sh
 - mariadb のみ動作確認:
   - ./mariadb-benchmark.sh
-- ホスト OS にて全体確認:
-  - make mariadb-status
+- ホスト OS にて全体の状態を確認:
+  - watch make mariadb-status
+  - 3 台とも同じ wsrep_local_state_uuid であることを確認
   - 3 台とも Synced になるまで確認して待つ
   - ctrl-c で停止
 
@@ -266,32 +279,40 @@ mariadb 以外は以下の方法で再構築する。
 
 ## アップデート
 
-- ./mariadb-backup.sh
-- Keycloak の更新
-  - SHARE/keycloak-quarkus/Dockerfile を編集
-    - ARG KEYCLOAK_IMAGE=keycloak/keycloak:24.0 の値を変更
-  - docker compose rm -sf keycloak
-  - ./up.sh keycloak
-- Keycloak の大幅更新を試す
-  - (WildFly版[~v16] から Quarkus版[v17~])
-  - 新規構築時: ./up.sh ALL-OLD で全体を一旦構築
-  - docker compose rm -sf keycloak-old
-  - ./up.sh keycloak
-- Keycloak 大幅バージョンダウン
-  - WebUI でログインできなくなった。
+DB バックアップを作成しておく。
 
-### 無停止で大幅アップデート
+### Keycloak の更新
 
-- マスターとなっていないノード(2台)にて
+- SHARE/keycloak-quarkus/Dockerfile を編集
+  - ARG KEYCLOAK_IMAGE=keycloak/keycloak:24.0 の値を変更
+- docker compose rm -sf keycloak
+- ./up.sh keycloak
+
+### Keycloak の大幅更新を試す方法
+
+- (WildFly版[~v16] から Quarkus版[v17~])
+- 新規構築時: ./up.sh ALL-OLD で全体を一旦構築
+- docker compose rm -sf keycloak-old
+- ./up.sh keycloak
+
+### 無停止で大幅更新
+
+- ウェブブラウザで Keycloak, jwt-server にログインしておく。
+- jwt-agent を起動しておく。
+- VIP が付いていないノード(2台)にて
   - docker compose build
   - docker compose rm -sf keycloak-old
   - ./up.sh keycloak
-- マスターノードにて
+- VIP が付いているノードにて
   - docker compose restart keepalived
   - (以下上記同様更新処理)
   - docker compose rm -sf keycloak-old
   - docker compose build
   - ./up.sh keycloak
-  - Keycloak ログイン中のウェブブラウザは一旦エラーが出た。
-    - 再度ログインしなおすと正常表示できた。
-  - jwt-agent が動き続けた。
+- Keycloak ログイン中のウェブブラウザは一旦エラーが出た。
+  - 再度ログインしなおすと正常表示できた。
+- jwt-agent が動き続けた。
+
+### Keycloak 大幅バージョンダウン
+
+- Web UI でログインできなくなった。
