@@ -134,6 +134,7 @@ DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
   - 間違えて ./mariadb-new.sh を実行した場合
     - 所属できない
     - 他のノードに影響は無い
+    - docker compose down -v で初期化してやりなおす
 - 起動を確認:
   - ./mariadb-status.sh
 - mariadb のみ動作確認:
@@ -194,6 +195,11 @@ LocalForward 57000 {manageコンテナのIPアドレス}:13128
   - 新規追加: localhost 57000
   - auto swich 設定: *.example.org に対して、上記で追加した設定に関連づけ
 
+## ヘルスチェック
+
+- bash health-check.sh; echo $?
+  - エラー数が返る
+
 ## 単体ノード停止・再開
 
 - ./mariadb-stop.sh
@@ -202,20 +208,28 @@ LocalForward 57000 {manageコンテナのIPアドレス}:13128
 ## 全ノード停止・再開
 
 - 停止手順
+  - 全ノードの Keycloak, jwt-server を停止する
+    - docker compose stop keycloak
+    - docker compose stop jwt-server
   - ./mariadb-backup.sh を念のため実行
   - kc3, kc2, kc1 の順で一つずつ mariadb コンテナ停止
-  - ./mariadb-stop.sh
-  - コンテナは消えるが volume は残る
+    - ./mariadb-stop.sh; sleep 5
+    - 同時に停止すると破損する
+  - docker compose down
+  - コンテナは消えるが volume (DB データ) は残る
+  - ログが消える (TODO ログの永続化)
 
 - 起動手順
   - ./mariadb-show-bootstrap.sh が safe_to_bootstrap: 1 となるホストを探す
-  - 最後に停止したコンテナが 1 になる
-  - ./mariadb-stop.sh を念のため実行
-  - ./mariadb-new.sh を実行
-
-- その他ノード
-  - ./mariadb-stop.sh を念のため実行
-  - ./mariadb-join.sh を実行
+    - 最後に停止したコンテナが 1 になっている
+  - safe_to_bootstrap: 1 のホストにて
+    - ./mariadb-stop.sh を念のため実行
+    - ./mariadb-new.sh
+    - ./up.sh ALL
+  - その他ノード
+    - ./mariadb-stop.sh を念のため実行
+    - ./mariadb-join.sh
+    - ./up.sh ALL
 
 - 別の方法
   - 各ノードの DB データを破棄 (後述)
@@ -225,26 +239,32 @@ LocalForward 57000 {manageコンテナのIPアドレス}:13128
 
 - make shell@???
 - docker compose down -v --remove-orphans
-- 再度、初期ノードだとしても「追加ノード構築・参加」可能
+  - そのノードの Docker コンテナ・データが全部消える。
+- 再度「追加ノード構築・参加」の手順にて再構築可能
+  - 初期ノード (mariadb-new.sh を実行した) かどうかは無関係
 - 全ノードの DB を破棄した場合は、「初期 DB ノード構築」から再構築する
 
 ## コンテナ再構築
 
-mariadb コンテナ再構築は、上記「単体 DB データ破棄」の項目参照
-
-mariadb 以外は以下の方法で再構築する。
+docker-compose.yaml や .env を更新した場合は以下の方法でコンテナを再構築する。
 
 - ./recreate.sh keycloak
 - ./recreate.sh nginx
 - ./recreate.sh keepalived
 - ./recreate.sh squid
 
+mariadb コンテナ再構築は、上記「単体 DB データ破棄」の項目参照
+
 ## 全ノード破棄 (完全初期化)
+
+LXD コンテナをすべて削除する。
+バックアップデータは消えない。
 
 - ./99_delete-hosts.sh
 
 ## DB データバックアップ
 
+- make shell@kc1
 - ./mariadb-backup.sh
 
 ## ログの確認
@@ -253,57 +273,66 @@ mariadb 以外は以下の方法で再構築する。
 
 ## テスト
 
-- (keycloak + mariadb フェイルオーバーの動作確認)
-  - squid 経由で https://keycloak.example.org に接続 (Web ブラウザ)
-  - admin:admin でログイン
-  - レルム作成、ユーザ作成、ユーザ詳細画面表示したままにしておく
-  - lxc ls で IPアドレスを確認
-    - ./myip.sh を LXD コンテナそれぞれで実行するでも良い
-  - 10.60.204.11 のアドレスも追加でついているコンテナで操作
-    - docker compose restart keepalived
-    - ./myip.sh
-  - 10.60.204.11 のアドレスが他のノードに移転されたことを確認
-  - ユーザ詳細画面をリロード
-  - 再度ログイン画面が出ずにユーザ詳細画面のままであれば成功
-- (jwt-server の動作確認)
-  - HPCI レルムにユーザを作成、属性に hpci.id を設定して保存
-  - squid 経由で https://jwtserver.example.org に接続 (Web ブラウザ)
-  - make shell@manage にて jwt-agent を起動
-    - ./install-jwt-agent.sh
-      - 取得された SHARE/jwt-agent ディレクトリは以降更新されない
-        - (更新・変更する場合は、手動で変更する)
-    - ./jwt-agent-via-squid.sh <jwt-agent引数...>
-    - manage コンテナの squid を利用してホスト名解決される
-  - 10.60.204.11 のアドレスがついているコンテナで操作
-    - docker compose restart keepalived
-    - ./myip.sh
-  - 10.60.204.11 のアドレスが他のノードに移転されたことを確認
-  - jwt-agent が停止しないことを確認
-    - 例: `while :;do ls -l /tmp/jwt_user_u0/token.jwt ; sleep 5; done`
-    ```
-    -rw------- 1 root root 835 May 31 04:11 /tmp/jwt_user_u0/token.jwt
-    -rw------- 1 root root 835 May 31 04:19 /tmp/jwt_user_u0/token.jwt
-    ```
+### keycloak + mariadb の動作確認
 
-## アップデート
+- squid 経由で https://keycloak.example.org に接続 (Web ブラウザ)
+- admin:admin でログイン
+- レルム作成、ユーザ作成、ユーザ詳細画面表示したままにしておく
+- lxc ls で IPアドレスを確認
+  - ./myip.sh を LXD コンテナそれぞれで実行するでも良い
+- 10.60.204.11 のアドレスも追加でついているコンテナで操作
+  - docker compose restart keepalived
+  - ./myip.sh
+- 10.60.204.11 のアドレスが他のノードに移転されたことを確認
+- ユーザ詳細画面をリロード
+- 再度ログイン画面が出ずにユーザ詳細画面のままであれば成功
+
+### jwt-server の動作確認
+
+- HPCI レルムにユーザを作成、属性に hpci.id を設定して保存
+- squid 経由で https://jwtserver.example.org に接続 (Web ブラウザ)
+- make shell@manage にて jwt-agent を起動
+  - ./install-jwt-agent.sh
+    - 取得された SHARE/jwt-agent ディレクトリは以後更新されない。
+      - (更新・変更する場合は、手動で変更する)
+  - ./jwt-agent-via-squid.sh <jwt-agent引数...>
+  - manage コンテナの squid を利用してホスト名解決される
+- 10.60.204.11 のアドレスがついているコンテナで操作
+  - docker compose restart keepalived
+  - ./myip.sh
+- 10.60.204.11 のアドレスが他のノードに移転されたことを確認
+- jwt-agent が停止しないことを確認
+  - 例: `while :;do ls -l /tmp/jwt_user_u0/token.jwt ; sleep 5; done`
+  ```
+  -rw------- 1 root root 835 May 31 04:11 /tmp/jwt_user_u0/token.jwt
+  -rw------- 1 root root 835 May 31 04:19 /tmp/jwt_user_u0/token.jwt
+  ```
+
+## アップデート (バージョン変更)
 
 DB バックアップを作成しておく。
 
 ### Keycloak の更新
 
+- VIP が付いていないノードから更新していく
 - SHARE/keycloak-quarkus/Dockerfile を編集
   - ARG KEYCLOAK_IMAGE=keycloak/keycloak:24.0 の値を変更
+- docker compose build
 - docker compose rm -sf keycloak
 - ./up.sh keycloak
+- VIP が付いていないノード更新後、VIP のノードにて
+  - docker compose restart keepalived
+  - その後同様に更新する
 
 ### Keycloak の大幅更新を試す方法
 
 - (WildFly版[~v16] から Quarkus版[v17~])
 - 新規構築時: ./up.sh ALL-OLD で全体を一旦構築
+- docker compose build
 - docker compose rm -sf keycloak-old
 - ./up.sh keycloak
 
-### 無停止で大幅更新
+### 無停止で Keycloak を大幅更新
 
 - ウェブブラウザで Keycloak, jwt-server にログインしておく。
 - jwt-agent を起動しておく。
@@ -313,14 +342,15 @@ DB バックアップを作成しておく。
   - ./up.sh keycloak
 - VIP が付いているノードにて
   - docker compose restart keepalived
-  - (以下上記同様更新処理)
-  - docker compose rm -sf keycloak-old
+  - (以下、上記同様の更新処理をおこなう)
   - docker compose build
+  - docker compose rm -sf keycloak-old
   - ./up.sh keycloak
-- Keycloak ログイン中のウェブブラウザは一旦エラーが出た。
+- Keycloak ログイン中のウェブブラウザはエラーになった。
   - 再度ログインしなおすと正常表示できた。
-- jwt-agent が動き続けた。
+- jwt-agent は動き続けた。
 
 ### Keycloak 大幅バージョンダウン
 
 - Web UI でログインできなくなった。
+- 対応していないようだ。
