@@ -3,8 +3,8 @@ x-common: &common
   restart: "no"
   init: true
   extra_hosts:
-    - "keycloak.example.org keycloak:10.60.204.11"
-    - "jwtserver.example.org jwtserver:10.60.204.11"
+    - "keycloak.example.org:10.60.204.11"
+    - "jwtserver.example.org:10.60.204.11"
 
 services:
   mariadb:
@@ -65,7 +65,7 @@ services:
     networks:
       mynet:
     ports:
-      - 8080:8080
+      #- 8080:8080
       - 7600:7600
     environment:
       - PROXY_ADDRESS_FORWARDING=true
@@ -103,7 +103,7 @@ services:
     networks:
       mynet:
     ports:
-      - 8080:8080
+      #- 8080:8080
       - 7800:7800
     environment:
       # https://www.keycloak.org/server/all-config?options-filter=all
