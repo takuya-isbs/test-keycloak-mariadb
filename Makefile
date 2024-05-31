@@ -29,3 +29,6 @@ ps:
 	@for h in $(HOSTS); do \
            echo "------- $$h --------";\
            $(EXEC) $(PROJECT)-$$h docker compose ps; done
+
+restart-keepalived-loop:
+	bash restart-keepalived-loop.sh
