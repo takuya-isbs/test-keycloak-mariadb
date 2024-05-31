@@ -25,6 +25,8 @@ ERR() {
     echo >&2 "Error: $@"
 }
 
+ERROR_COUNT=0
+
 CHECK() {
     local status="$1"
     local expect="$2"
@@ -33,6 +35,7 @@ CHECK() {
         echo "OK: $name"
     else
         ERR "$name"
+        ERROR_COUNT=$((ERROR_COUNT + 1))
     fi
 }
 
@@ -71,3 +74,5 @@ status=$(CURL_SQUID $KC_HEALTH | jq -r .status || true)
 CHECK "$status" "UP" "(from VIP,$VIP_HOST) $KC_HEALTH"
 status=$(CURL_SQUID $JS_HEALTH | grep JWT-SERVER | wc -l || true)
 CHECK "$status" "1" "(from VIP,$VIP_HOST) $JS_HEALTH"
+
+exit $ERROR_COUNT
