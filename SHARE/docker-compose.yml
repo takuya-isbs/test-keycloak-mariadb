@@ -5,6 +5,11 @@ x-common: &common
   extra_hosts:
     - "keycloak.example.org:10.60.204.11"
     - "jwtserver.example.org:10.60.204.11"
+  logging:
+    driver: "fluentd"
+    options:
+      fluentd-address: localhost:24224
+      tag: "{{.Name}}"
 
 services:
   mariadb:
@@ -36,6 +41,7 @@ services:
       - ./hostlist.txt:/hostlist.txt:ro
       - ./mariadb/mariadb-add-jwt-server.sh:/mariadb-add-jwt-server.sh:ro
     environment:
+      - TZ=${TZ}
       - WSREP_NODE_ADDRESS=${WSREP_NODE_ADDRESS:-}
       - WSREP_NEW_CLUSTER=${WSREP_NEW_CLUSTER:-no}
       # ALLOW_EMPTY_PASSWORD is recommended only for development.
@@ -68,6 +74,7 @@ services:
       #- 8080:8080
       - 7600:7600
     environment:
+      - TZ=${TZ}
       - PROXY_ADDRESS_FORWARDING=true
       - DB_VENDOR=mariadb
       - DB_ADDR=mariadb
@@ -106,6 +113,7 @@ services:
       #- 8080:8080
       - 7800:7800
     environment:
+      - TZ=${TZ}
       # https://www.keycloak.org/server/all-config?options-filter=all
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_PASSWORD:-admin}
@@ -132,7 +140,8 @@ services:
       - KC_HTTP_RELATIVE_PATH=/auth
       - KC_HEALTH_ENABLED=true   # enable /auth/health
       - KC_METRICS_ENABLED=true  # enable /auth/metrics
-      - KC_LOG_LEVEL=INFO,org.infinispan:DEBUG,org.jgroups:DEBUG
+      - KC_LOG_LEVEL=INFO
+      #- KC_LOG_LEVEL=INFO,org.infinispan:DEBUG,org.jgroups:DEBUG
       #- KC_LOG_LEVEL=DEBUG,org.infinispan:DEBUG,org.jgroups:DEBUG
       #- KC_LOG_LEVEL=INFO,org.keycloak.protocol.oidc.grants:TRACE
     <<: [*common]
@@ -146,6 +155,7 @@ services:
     volumes:
       - ./certs/minica.pem:/usr/share/pki/ca-trust-source/anchors/minica.crt
     environment:
+      - TZ=${TZ}
       - CATALINA_OPTS="-Xmx512m"
       - KEYCLOAK=${JWTSERVER_KEYCLOAK_HOSTNAME:-keycloak.example.org}
       - REALM=${JWTSERVER_REALM:-HPCI}
@@ -171,6 +181,8 @@ services:
       - ./certs/keycloak.example.org/key.pem:/etc/nginx/key.pem:ro
       - ./certs/dummy.example.org/cert.pem:/etc/nginx/dummycert.pem:ro
       - ./certs/dummy.example.org/key.pem:/etc/nginx/dummykey.pem:ro
+    environment:
+      - TZ=${TZ}
     <<: [*common]
 
   keepalived:
@@ -187,6 +199,7 @@ services:
       - ./keepalived-entrypoint.sh:/keepalived-entrypoint.sh
     entrypoint: ["sh", "/keepalived-entrypoint.sh"]
     environment:
+      TZ: ${TZ}
       #KEEPALIVED_COMMAND_LINE_ARGUMENTS: --log-detail
       KEEPALIVED_UNICAST_PEERS: "#PYTHON2BASH:['10.60.204.101', '10.60.204.102', '10.60.204.103']"
       KEEPALIVED_VIRTUAL_IPS: 10.60.204.11/24
@@ -194,15 +207,19 @@ services:
       KEEPALIVED_PASSWORD: ${KEEPALIVED_PASSWORD:-SzVzOEFeXW9zEws02iPz645urNVGxUsB}
     <<: [*common]
 
-  # squid:
-  #   image: ubuntu/squid
-  #   networks:
-  #     mynet:
-  #   ports:
-  #     - "0.0.0.0:13128:3128"
-  #   volumes:
-  #     - ./squid-allow-ssl-ports.conf:/etc/squid/conf.d/allow-ssl-ports.conf:ro
-  #   <<: [*common]
+  fluentd:
+    #image: fluent/fluentd:v1.17-1
+    image: fluent/fluentd:v1.17-debian
+    restart: "always"
+    init: true
+    volumes:
+      - ./fluent.conf:/fluentd/etc/fluent.conf
+      - /mnt/glusterfs/fluentd-${MY_HOSTNAME:-unknown}:/fluentd/log
+    ports:
+      - 24224:24224
+      - 24224:24224/udp
+    environment:
+      - TZ=${TZ}
 
 volumes:
   mariadb_data:
