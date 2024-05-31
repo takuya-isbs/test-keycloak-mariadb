@@ -12,9 +12,11 @@
 - それぞれのノードにて、docker compose でアプリ一式を起動
   - docker compose で起動する一式が実環境でも動作することを想定
 - MariaDB Galera cluster で DB を冗長化
-  - 停止しないことが前提で、再起動はできない
-  - 破損・停止した場合は再所属手続きが必要
+  - 停止しないことが前提
+  - 破損したら再構築して再所属すれば復旧
 - それぞれのノードで Keycloak が動作
+- それぞれのノードで jwt-server が動作
+  - https://github.com/oss-tsukuba/jwt-server
 - 代表アドレスで Keycloak にアクセス
   - Keepalived (VRRP) 利用
   - NGINX で https 化、リバースプロキシ
