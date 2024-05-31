@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/bin/bash
+#set -x
 
 # for manage container
-https_proxy=http://localhost:13328 jwt-agent "$@"
+https_proxy=http://localhost:13128 jwt-agent "$@"
