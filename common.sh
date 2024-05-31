@@ -27,4 +27,6 @@ exec_para() {
 }
 
 set -eu -o pipefail
-set -x
+if [ ${DEBUG:-1} -eq 1 ]; then
+    set -x
+fi

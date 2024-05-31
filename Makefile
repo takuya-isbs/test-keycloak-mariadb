@@ -2,7 +2,7 @@ SHELL := /bin/bash
 COMMON := $(realpath common.sh)
 
 define get_val
-$(shell . $(COMMON); echo $$$(1) )
+$(shell DEBUG=0 . $(COMMON); echo $$$(1) )
 endef
 
 PROJECT = $(call get_val,PROJECT)
@@ -32,3 +32,6 @@ ps:
 
 restart-keepalived-loop:
 	bash restart-keepalived-loop.sh
+
+health-check:
+	bash health-check.sh
