@@ -48,12 +48,12 @@ for HOST in $DB_HOSTS; do
     FULLNAME=${PROJECT}-${HOST}
     #CURL_LXD $FULLNAME $KEYCLOAK $KC_HEALTH
     status=$(CURL_LXD $FULLNAME $KEYCLOAK $KC_HEALTH | jq -r .status || true)
-    CHECK $status "UP" "(from $FULLNAME) $KC_HEALTH"
+    CHECK "$status" "UP" "(from $FULLNAME) $KC_HEALTH"
     #CURL_LXD $FULLNAME $JWT_SERVER $JS_HEALTH
     status=$(CURL_LXD $FULLNAME $JWT_SERVER $JS_HEALTH | grep JWT-SERVER | wc -l || true)
-    CHECK $status "1" "(from $FULLNAME) $JS_HEALTH"
+    CHECK "$status" "1" "(from $FULLNAME) $JS_HEALTH"
     status=$(LXC_EXEC $FULLNAME -- docker compose exec mariadb mariadb-admin ping | grep "is alive" | wc -l || true)
-    CHECK $status "1" "(from $FULLNAME) mariadb"
+    CHECK "$status" "1" "(from $FULLNAME) mariadb"
 
     if [ -z "$VIP_HOST" ]; then
         ips=$($LXC exec $FULLNAME /SHARE/myip.sh)
@@ -68,6 +68,6 @@ done
 
 # VIP
 status=$(CURL_SQUID $KC_HEALTH | jq -r .status || true)
-CHECK $status "UP" "(from VIP,$VIP_HOST) $KC_HEALTH"
+CHECK "$status" "UP" "(from VIP,$VIP_HOST) $KC_HEALTH"
 status=$(CURL_SQUID $JS_HEALTH | grep JWT-SERVER | wc -l || true)
-CHECK $status "1" "(from VIP,$VIP_HOST) $JS_HEALTH"
+CHECK "$status" "1" "(from VIP,$VIP_HOST) $JS_HEALTH"
