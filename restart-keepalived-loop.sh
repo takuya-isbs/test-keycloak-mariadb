@@ -8,8 +8,8 @@ get_ipaddrs() {
     lxc list -f json | jq -r '.[] | select(.name == "'"$NAME"'") | .state.network.eth0.addresses[] | select(.family == "inet") | .address'
 }
 
+echo "### ctrl-c to stop ###"
 while :; do
-    echo "### ctrl-c to stop ###"
     FOUND=
     for HOST in $DB_HOSTS; do
         FULLNAME=${PROJECT}-${HOST}
