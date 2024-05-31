@@ -1,5 +1,6 @@
 x-common: &common
-  restart: "unless-stopped"
+  #restart: "unless-stopped"
+  restart: "no"
   init: true
   extra_hosts:
     - "keycloak.example.org keycloak:10.60.204.11"
@@ -75,18 +76,15 @@ services:
       - DB_PASSWORD=${MARIADB_PASSWORD:-keycloak_password}
       - KEYCLOAK_USER=admin
       - KEYCLOAK_PASSWORD=${KEYCLOAK_PASSWORD:-admin}
+      # cache: using JDBC_PING
       # SEE: https://github.com/fit2anything/keycloak-cluster-setup-and-configuration/blob/master/README.md#3-jdbc_ping
       # SEE: https://www.keycloak.org/2019/05/keycloak-cluster-setup
       - JGROUPS_DISCOVERY_PROTOCOL=JDBC_PING
       - JGROUPS_DISCOVERY_EXTERNAL_IP=${MY_IPADDR:-}
-      # SEE: https://keycloak.discourse.group/t/keycloak-running-on-docker-cannot-synchronize-member-cluster/17256/4
-      # for k8s...?
-      #- JGROUPS_DISCOVERY_PROTOCOL=dns.DNS_PING
-      #- JGROUPS_DISCOVERY_PROPERTIES=dns_query=keycloak
       # SEE: https://github.com/keycloak/keycloak-containers/tree/15.0.2/server#clustering
       # SEE: https://github.com/keycloak/keycloak-containers/blob/15.0.2/server/tools/cli/infinispan/cache-owners.cli
-      - CACHE_OWNERS_COUNT=3
-      - CACHE_OWNERS_AUTH_SESSIONS_COUNT=3
+      - CACHE_OWNERS_COUNT=2
+      - CACHE_OWNERS_AUTH_SESSIONS_COUNT=2
     volumes:
       # SEE: https://keycloak.discourse.group/t/cluster-keycloak-ha-jdbc-ping-jgroups-discovery-external-ip/10137/3
       # SEE: https://github.com/keycloak/keycloak-containers/pull/204#issuecomment-575152116
@@ -106,7 +104,7 @@ services:
       mynet:
     ports:
       - 8080:8080
-      - 7600:7600
+      - 7800:7800
     environment:
       # https://www.keycloak.org/server/all-config?options-filter=all
       - KEYCLOAK_ADMIN=admin
@@ -119,10 +117,11 @@ services:
       - KC_DB_USERNAME=keycloak
       - KC_DB_PASSWORD=${MARIADB_PASSWORD:-keycloak_password}
       - KC_TRANSACTION_XA_ENABLED=false
-      # cache
-      # TODO https://gist.github.com/xgp/768eea11f92806b9c83f95902f7f8f80
-      - KC_CACHE=ispn
-      - KC_CACHE_STACK=tcp
+      # cache: use TCPPING (keycloak-quarkus/cache-ispn-tcpping.xml)
+      # SEE: https://developer.jboss.org/docs/DOC-10915
+      - KC_EXTERNAL_ADDR=${MY_IPADDR:-}
+      - KC_BIND_PORT=7800
+      - KC_INITIAL_HOSTS=10.60.204.101[7800],10.60.204.102[7800],10.60.204.101[7800]
       # for reverse proxy
       - KC_PROXY=edge
       - KC_PROXY_ADDRESS_FORWARDING=true
@@ -131,8 +130,8 @@ services:
       - KC_HTTP_ENABLED=true
       - KC_HTTP_PORT=8080
       - KC_HTTP_RELATIVE_PATH=/auth
-      - KC_HEALTH_ENABLED=true
-      - KC_METRICS_ENABLED=true
+      - KC_HEALTH_ENABLED=true   # enable /auth/health
+      - KC_METRICS_ENABLED=true  # enable /auth/metrics
       - KC_LOG_LEVEL=INFO,org.infinispan:DEBUG,org.jgroups:DEBUG
       #- KC_LOG_LEVEL=DEBUG,org.infinispan:DEBUG,org.jgroups:DEBUG
       #- KC_LOG_LEVEL=INFO,org.keycloak.protocol.oidc.grants:TRACE
