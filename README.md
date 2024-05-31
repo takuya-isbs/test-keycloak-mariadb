@@ -251,7 +251,7 @@ mariadb 以外は以下の方法で再構築する。
     - ./install-jwt-agent.sh
       - 取得された SHARE/jwt-agent ディレクトリは以降更新されない
         - (更新・変更する場合は、手動で変更する)
-    - ./jwt-agent-with-proxy.sh <jwt-agent引数...>
+    - ./jwt-agent-via-squid.sh <jwt-agent引数...>
     - manage コンテナの squid を利用してホスト名解決される
   - 10.60.204.11 のアドレスがついているコンテナで操作
     - docker compose restart keepalived
