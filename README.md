@@ -246,11 +246,21 @@ mariadb 以外は以下の方法で再構築する。
   - HPCI レルムにユーザを作成、属性に hpci.id を設定して保存
   - squid 経由で https://jwtserver.example.org に接続 (Web ブラウザ)
   - make shell@manage にて jwt-agent を起動
-  - 10.60.204.11 のアドレスも追加でついているコンテナで操作
+    - ./install-jwt-agent.sh
+      - 取得された SHARE/jwt-agent ディレクトリは以降更新されない
+        - (更新・変更する場合は、手動で変更する)
+    - ./jwt-agent-with-proxy.sh <jwt-agent引数...>
+    - manage コンテナの squid を利用してホスト名解決される
+  - 10.60.204.11 のアドレスがついているコンテナで操作
     - docker compose restart keepalived
     - ./myip.sh
   - 10.60.204.11 のアドレスが他のノードに移転されたことを確認
   - jwt-agent が停止しないことを確認
+    - 例: `while :;do ls -l /tmp/jwt_user_u0/token.jwt ; sleep 5; done`
+    ```
+    -rw------- 1 root root 835 May 31 04:11 /tmp/jwt_user_u0/token.jwt
+    -rw------- 1 root root 835 May 31 04:19 /tmp/jwt_user_u0/token.jwt
+    ```
 
 ## アップデート
 
@@ -258,9 +268,28 @@ mariadb 以外は以下の方法で再構築する。
 - Keycloak の更新
   - SHARE/keycloak-quarkus/Dockerfile を編集
     - ARG KEYCLOAK_IMAGE=keycloak/keycloak:24.0 の値を変更
+  - docker compose rm -sf keycloak
   - ./up.sh keycloak
 - Keycloak の大幅更新を試す
   - (WildFly版[~v16] から Quarkus版[v17~])
   - 新規構築時: ./up.sh ALL-OLD で全体を一旦構築
   - docker compose rm -sf keycloak-old
   - ./up.sh keycloak
+- Keycloak 大幅バージョンダウン
+  - WebUI でログインできなくなった。
+
+### 無停止で大幅アップデート
+
+- マスターとなっていないノード(2台)にて
+  - docker compose build
+  - docker compose rm -sf keycloak-old
+  - ./up.sh keycloak
+- マスターノードにて
+  - docker compose restart keepalived
+  - (以下上記同様更新処理)
+  - docker compose rm -sf keycloak-old
+  - docker compose build
+  - ./up.sh keycloak
+  - Keycloak ログイン中のウェブブラウザは一旦エラーが出た。
+    - 再度ログインしなおすと正常表示できた。
+  - jwt-agent が動き続けた。
