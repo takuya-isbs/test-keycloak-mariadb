@@ -10,24 +10,30 @@
 - 3 台のホスト相当 (LXD コンテナノード) が同一ネットワークに存在
 - それぞれの LXD コンテナノードに Docker をインストール
 - それぞれのノードにて、docker compose でアプリ一式を起動
-  - docker compose で起動する一式が実環境でも動作することを想定
+  - アプリ一式が実環境でも動作することを想定
 - MariaDB Galera cluster で DB を冗長化
   - 全ノード停止しない前提
   - 破損したら再構築して再所属すれば復旧
   - 全ノード停止した場合、DB バックアップデータから再構築可能
 - それぞれのノードで Keycloak が動作
+  - Keycloak 同士でログインセッション情報など、DB データ以外のキャッシュ情報を共有
 - それぞれのノードで jwt-server が動作
   - https://github.com/oss-tsukuba/jwt-server
+  - Keycloak で認証・ログイン
 - 代表アドレスで Keycloak にアクセス
   - Keepalived (VRRP) 利用
   - NGINX で https 化、リバースプロキシ
-- Keepalived が無応答で(restart でも) 他のノードが代表に昇格
-- manage コンテナ
-  - squid を実行
-    - http proxy をここに設定して、このネットワーク内の名前でブラウザアクセス用
+- Keepalived が無応答で他のノードが代表に昇格
+- manage ノード (LXD コンテナ)
+  - 上記 3 ノードとは別のホスト
+    - 管理ホストやクライアントを想定した用途
+  - squid を実行 (http proxy)
+    - ここを中継して、テスト用ネットワークにアクセスできる。
   - docker registry (proxy) を実行
-    - dockerhub, quay.io からのダウンロードをキャッシュ
+    - Docker イメージをキャッシュ (高速化、通信節約)
     - 外部に設置しても良い
+  - ここを起点に Keycloak の API を使って設定
+  - jwt-agent の動作確認
 
 ## 必要
 
@@ -41,6 +47,8 @@ manage コンテナにて docker registry proxy が標準で動作する。
 dockerhub (docker.io) と quay.io のイメージをキャッシュする。
 
 それとは別のホストに docker registry proxy を構築する場合は以下のように構築する。
+
+認証・アクセス制限が無いので注意。
 
 SHARE/compose-manage.yml を参考にして、
 新規ディレクトリに compose.yml を作成する。
