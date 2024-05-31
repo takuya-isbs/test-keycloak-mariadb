@@ -131,8 +131,9 @@ services:
       - KC_BIND_PORT=7800
       - KC_INITIAL_HOSTS=10.60.204.101[7800],10.60.204.102[7800],10.60.204.101[7800]
       # for reverse proxy
-      - KC_PROXY=edge
-      - KC_PROXY_ADDRESS_FORWARDING=true
+      #- KC_PROXY=edge  # DEPRECATED
+      - KC_PROXY_HEADERS=xforwarded
+      #- KC_PROXY_ADDRESS_FORWARDING=true  # unknown
       - KC_HOSTNAME_STRICT=false
       - KC_HOSTNAME_STRICT_HTTPS=false
       - KC_HTTP_ENABLED=true
