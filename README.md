@@ -111,6 +111,7 @@ DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
 - (option: Dockerfile イメージを再ビルドする場合)
   - docker compose build
 - ./mariadb-stop.sh
+- ./fluentd-start.sh
 - ./mariadb-new.sh
   - 初回、DB クラスタ作成時のみ実行する。
 - 起動を確認:
@@ -126,9 +127,11 @@ DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
 
 - `make shell@kc2`
   - or `make shell@kc3`
+  - (kc1 を再参加する場合も同様)
 - (option: イメージ再ビルドする場合)
   - docker compose build
 - ./mariadb-stop.sh
+- ./fluentd-start.sh
 - ./mariadb-join.sh
   - 2台目以降参加する場合
   - 間違えて ./mariadb-new.sh を実行した場合
@@ -153,10 +156,11 @@ DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
   - 処理概要
     - ホスト名から IP アドレスを推定
     - docker compose up -d --no-recreate を実行
-- 間違えて --no-recreate をつけずに起動してしまった場合
-  - mariadb が起動しない
+- 間違えて --no-recreate をつけずに docker compose up -d してしまった場合
+  - mariadb が起動しなくなる
   - 再度 mariadb をクラスタに所属しなおす
   - docker compose down -v --remove-orphans
+  - ./fluentd-start.sh
   - ./mariadb-join.sh
   - ./mariadb-status.sh
 
@@ -202,8 +206,15 @@ LocalForward 57000 {manageコンテナのIPアドレス}:13128
 
 ## 単体ノード停止・再開
 
-- ./mariadb-stop.sh
-- ./mariadb-join.sh
+1 ノードずつ停止ならば可能。
+同時に 3 ノード停止することはできない。
+
+- 停止
+  - docker compose stop
+  - (ホストを停止可能な状態になる)
+- 再開
+  - ./fluentd-start.sh
+  - docker compose start
 
 ## 全ノード停止・再開
 
@@ -321,36 +332,32 @@ DB バックアップを作成しておく。
 - docker compose rm -sf keycloak
 - ./up.sh keycloak
 - VIP が付いていないノード更新後、VIP のノードにて
-  - docker compose restart keepalived
+  - docker compose stop keepalived
   - その後同様に更新する
-
-### Keycloak の大幅更新を試す方法
-
-- (WildFly版[~v16] から Quarkus版[v17~])
-- 新規構築時: ./up.sh ALL-OLD で全体を一旦構築
-- docker compose build
-- docker compose rm -sf keycloak-old
-- ./up.sh keycloak
+  - docker compose start keepalived
 
 ### 無停止で Keycloak を大幅更新
 
+- (WildFly版[~v16] から Quarkus版[v17~] への更新)
+- 新規構築時: ./up.sh ALL-OLD で全体を一旦構築
 - ウェブブラウザで Keycloak, jwt-server にログインしておく。
-- jwt-agent を起動しておく。
+- jwt-agent を起動しておく。(動作確認目的)
 - VIP が付いていないノード(2台)にて
   - docker compose build
   - docker compose rm -sf keycloak-old
   - ./up.sh keycloak
 - VIP が付いているノードにて
-  - docker compose restart keepalived
+  - docker compose stop keepalived
   - (以下、上記同様の更新処理をおこなう)
   - docker compose build
   - docker compose rm -sf keycloak-old
   - ./up.sh keycloak
+  - docker compose start keepalived
 - Keycloak ログイン中のウェブブラウザはエラーになった。
   - 再度ログインしなおすと正常表示できた。
 - jwt-agent は動き続けた。
 
-### Keycloak 大幅バージョンダウン
+### Keycloak バージョンダウンはできない
 
 - Web UI でログインできなくなった。
 - 対応していないようだ。
