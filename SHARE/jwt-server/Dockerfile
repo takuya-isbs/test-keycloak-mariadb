@@ -1,21 +1,37 @@
+# REFERENCE: https://github.com/oss-tsukuba/gfarm/blob/2.8/docker/dist/jwt-server/jwt-server/Dockerfile
+
 FROM rockylinux/rockylinux:9
+#FROM almalinux/almalinux:9
 
 RUN dnf -y update \
  && dnf -y install \
- git java-devel tomcat maven mariadb
+ git java-21-openjdk-devel maven mariadb wget
+
+RUN alternatives --set java java-21-openjdk.x86_64
+RUN alternatives --set javac java-21-openjdk.x86_64
+
+ARG TOMCAT_VER=10.1.31
+
+RUN wget https://archive.apache.org/dist/tomcat/tomcat-10/v$TOMCAT_VER/bin/apache-tomcat-$TOMCAT_VER.tar.gz
+RUN tar -xvf apache-tomcat-$TOMCAT_VER.tar.gz -C /opt
+RUN ln -s /opt/apache-tomcat-$TOMCAT_VER /opt/tomcat
+
+RUN useradd -s /sbin/nologin tomcat
+RUN chown -R tomcat: /opt/apache-tomcat-$TOMCAT_VER
+RUN sh -c 'chmod +x /opt/tomcat/bin/*.sh'
+
+RUN rm -rf /opt/tomcat/webapps/*
 
 RUN git clone https://github.com/oss-tsukuba/jwt-server.git
 
-#ARG KEYCLOAK_VERSION=20.0.1  # NG for Keycloak server 24
-#ARG KEYCLOAK_VERSION=21.0.0  # NG
-#ARG KEYCLOAK_VERSION=22.0.0  # NG
-#ARG KEYCLOAK_VERSION=23.0.0  # OK
-ARG KEYCLOAK_VERSION=24.0.4  # OK
+#COPY application.properties /jwt-server/src/main/resources/
+RUN sed -i 's/${KEYCLOAK}:443/${KEYCLOAK}/' /jwt-server/src/main/resources/application.properties
+
+ENV JAVA_HOME="/usr/lib/jvm/java"
 
 RUN cd jwt-server \
- && sed -i "s|<keycloak.version>[^<]*</keycloak.version>|<keycloak.version>${KEYCLOAK_VERSION}</keycloak.version>|" pom.xml \
  && mvn package \
- && cp target/jwt-server.war /usr/share/tomcat/webapps/ROOT.war
+ && cp target/jwt-server.war /opt/tomcat/webapps/ROOT.war
 
 COPY run-tomcat.sh /run-tomcat.sh
 COPY jwt-server-sql.sh /jwt-server-sql.sh

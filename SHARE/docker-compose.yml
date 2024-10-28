@@ -104,8 +104,6 @@ services:
   # https://qiita.com/uturned0/items/e9256c48ccba6f588d79
   keycloak:
     hostname: keycloak
-    #image: quay.io/keycloak/keycloak:24
-    #image: keycloak/keycloak:24  # to quary.io via registory proxy
     build: ./keycloak-quarkus
     networks:
       mynet:

@@ -110,6 +110,8 @@ DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
 - make shell@kc1
 - (option: Dockerfile イメージを再ビルドする場合)
   - docker compose build
+- ./setup-glusterfs.sh
+  - 初期ノードのみで実行
 - ./mariadb-stop.sh
 - ./fluentd-start.sh
 - ./mariadb-new.sh
@@ -150,12 +152,13 @@ DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
 
 ### mariadb 以外のコンテナ起動
 
-上記のように mariadb 起動後、各ノードにて以下を実行する。
+上記のように mariadb 起動後、各 kc? ノードにて以下を実行する。
 
 - ./up.sh ALL
   - 処理概要
     - ホスト名から IP アドレスを推定
     - docker compose up -d --no-recreate を実行
+    - 初回はここではまだ jwt-server が正常起動しない
 - 間違えて --no-recreate をつけずに docker compose up -d してしまった場合
   - mariadb が起動しなくなる
   - 再度 mariadb をクラスタに所属しなおす
@@ -173,6 +176,10 @@ jwt-server が動作するための設定を Keycloak に投入する。
 - make shell@manage
 - ./install-keycloak-api.sh
 - ./keycloak-config.sh
+- 各 kc? ノードにて、以下を実行
+  - ./up.sh jwt-server
+- 後述「テスト」を参照
+  - ここでは、まだユーザーが無いので、jwt-serverにログインはできない
 
 ## squid 経由でウェブブラウザアクセス
 
@@ -300,7 +307,11 @@ LXD コンテナをすべて削除する。
 
 ### jwt-server の動作確認
 
-- HPCI レルムにユーザを作成、属性に hpci.id を設定して保存
+- HPCI レルムにユーザを作成、属性(Attributes)にキー hpci.id、値をユーザ名として設定して保存
+  - Credentials でパスワードをセットする (テンポラリ状態を解除する)
+  - Keycloak 24 では属性タブが廃止された
+    - レルム設定に User Profile タブがあるので、そこに hpci.id を追加する
+    - その後、ユーザの設定に hpci.id が増えているので、値を入れる
 - squid 経由で https://jwtserver.example.org に接続 (Web ブラウザ)
 - make shell@manage にて jwt-agent を起動
   - ./install-jwt-agent.sh

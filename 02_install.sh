@@ -10,6 +10,7 @@ DOCKER_PASS=${DOCKER_PASS:-}
 EOF
 
 exec_para "$HOSTS" sh /SHARE/install-docker.sh
+exec_para "$HOSTS" sh /SHARE/install-glusterfs.sh
 
 $LXC exec "$HOST_MANAGE" bash /SHARE/setup-manage.sh
 
