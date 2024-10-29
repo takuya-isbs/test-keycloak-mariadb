@@ -126,7 +126,7 @@ realm_config = '''
   "defaultSignatureAlgorithm": "ES256",
   "ssoSessionIdleTimeout": 21600,
   "offlineSessionMaxLifespanEnabled": true,
-  "offlineSessionMaxLifespan": 604800,
+  "offlineSessionMaxLifespan": 31536000,
   "accessTokenLifespan": 600,
   "oauth2DeviceCodeLifespan": 300,
   "oauth2DevicePollingInterval": 10
