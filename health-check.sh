@@ -16,9 +16,10 @@ CURL_SQUID() {
 
 CURL_LXD() {
     local CONT_NAME="$1"
-    local url_host="$2"
-    local url="$3"
-    LXC_EXEC $CONT_NAME -- curl -s curl -s --connect-timeout $TIMEOUT --cacert /SHARE/${CACERT} -L --resolve "${url_host}:443:127.0.0.1" "$url"
+    local url="$2"
+    local host1="$3"
+    local host2="$4"
+    LXC_EXEC $CONT_NAME -- curl -s curl -s --connect-timeout $TIMEOUT --cacert /SHARE/${CACERT} -L --resolve "${host1}:443:127.0.0.1" --resolve "${host2}:443:127.0.0.1" "$url"
 }
 
 ERR() {
@@ -39,21 +40,25 @@ CHECK() {
     fi
 }
 
-KEYCLOAK=keycloak.example.org
-JWT_SERVER=jwtserver.example.org
+IS_JWTSERVER() {
+    grep "<title>Sign in to " | wc -l
+}
 
-KC_HEALTH=https://${KEYCLOAK}/auth/health
-JS_HEALTH=https://${JWT_SERVER}/menu/
+KEYCLOAK_HOSTNAME=keycloak.example.org
+JWT_SERVER_HOSTNAME=jwtserver.example.org
+
+KC_HEALTH=https://${KEYCLOAK_HOSTNAME}/auth/health
+JS_HEALTH=https://${JWT_SERVER_HOSTNAME}/menu/
 
 date
 VIP_HOST=
 for HOST in $DB_HOSTS; do
     FULLNAME=${PROJECT}-${HOST}
-    #CURL_LXD $FULLNAME $KEYCLOAK $KC_HEALTH
-    status=$(CURL_LXD $FULLNAME $KEYCLOAK $KC_HEALTH | jq -r .status || true)
+    #CURL_LXD $FULLNAME $KC_HEALTH $KEYCLOAK_HOSTNAME $JWT_SERVER_HOSTNAME
+    status=$(CURL_LXD $FULLNAME $KC_HEALTH $KEYCLOAK_HOSTNAME $JWT_SERVER_HOSTNAME | jq -r .status || true)
     CHECK "$status" "UP" "(from $FULLNAME) $KC_HEALTH"
-    #CURL_LXD $FULLNAME $JWT_SERVER $JS_HEALTH
-    status=$(CURL_LXD $FULLNAME $JWT_SERVER $JS_HEALTH | grep JWT-SERVER | wc -l || true)
+    #CURL_LXD $FULLNAME $JS_HEALTH $KEYCLOAK_HOSTNAME $JWT_SERVER_HOSTNAME
+    status=$(CURL_LXD $FULLNAME $JS_HEALTH $KEYCLOAK_HOSTNAME $JWT_SERVER_HOSTNAME | IS_JWTSERVER || true)
     CHECK "$status" "1" "(from $FULLNAME) $JS_HEALTH"
     status=$(LXC_EXEC $FULLNAME -- docker compose exec mariadb mariadb-admin ping | grep "is alive" | wc -l || true)
     CHECK "$status" "1" "(from $FULLNAME) mariadb"
@@ -72,7 +77,7 @@ done
 # VIP
 status=$(CURL_SQUID $KC_HEALTH | jq -r .status || true)
 CHECK "$status" "UP" "(from VIP,$VIP_HOST) $KC_HEALTH"
-status=$(CURL_SQUID $JS_HEALTH | grep JWT-SERVER | wc -l || true)
+status=$(CURL_SQUID $JS_HEALTH | IS_JWTSERVER || true)
 CHECK "$status" "1" "(from VIP,$VIP_HOST) $JS_HEALTH"
 
 exit $ERROR_COUNT
