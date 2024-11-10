@@ -255,9 +255,25 @@ mapper_hpciid = {
         "claim.name": "hpci\.id",
         "user.attribute": "hpci.id",
         "jsonType.label": "String",
-        "userinfo.token.claim": True,
+        "userinfo.token.claim": False,
         "id.token.claim": False,
         "access.token.claim": True,
+    }
+}
+
+mapper_localacc_name = 'local-accounts'
+mapper_localacc = {
+    "name": mapper_localacc_name,
+    "protocol": "openid-connect",
+    "consentRequired": False,
+    "protocolMapper": "oidc-usermodel-attribute-mapper",
+    "config": {
+        "claim.name": "local-accounts",
+        "user.attribute": "local-accounts",
+        "jsonType.label": "JSON",
+        "userinfo.token.claim": True,
+        "id.token.claim": False,
+        "access.token.claim": False,
     }
 }
 
@@ -281,6 +297,7 @@ create_mapper(scope_scitokens, mapper_ver_name, mapper_ver)
 create_client_scope(scope_hpci)
 create_mapper(scope_hpci, mapper_hpciver_name, mapper_hpciver)
 create_mapper(scope_hpci, mapper_hpciid_name, mapper_hpciid)
+create_mapper(scope_hpci, mapper_localacc_name, mapper_localacc)
 create_mapper(scope_hpci, mapper_hpciglobal_name, mapper_hpciglobal)
 
 # client
