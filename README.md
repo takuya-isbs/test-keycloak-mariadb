@@ -181,6 +181,11 @@ DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
   - ### DONE #### のあと TypeError: 'NoneType' object is not callable  になるが問題ない
     - 処理がすべて完了したあとにエラーが発生する
     - Python 3.12 など新しくすると治るので、ライブラリの問題と考えている
+- kc1 ノードで以下を実行 (keycloak-old コンテナ使用時は実行不要)
+  - ./keycloak-config-for-localhost.sh
+    - 補足: manage コンテナだけでは設定が不十分となっているため
+      - python-keycloak は、users/profile API を発行できないため
+      - ./keycloak-config-for-localhost.sh は、keycloak コンテナ内で kcadm.sh を使って設定している
 - 各 kc? ノードそれぞれで以下を実行
   - ./up.sh jwt-server
 - 後述「テスト」を参照
@@ -395,3 +400,7 @@ DB バックアップを作成しておく。
 
 - 試したところ Web UI でログインできなくなった。
 - 対応していないようだ。
+
+### TODO
+
+- パラメータの一元管理
