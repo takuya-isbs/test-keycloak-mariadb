@@ -30,7 +30,7 @@ $KCADM update users/profile -r $REALM -f - <<'EOF'
     },
     "permissions" : {
       "view" : [ "admin", "user" ],
-      "edit" : [ "admin", "user" ]
+      "edit" : [ "admin" ]
     },
     "multivalued" : false
   }, {
@@ -47,7 +47,7 @@ $KCADM update users/profile -r $REALM -f - <<'EOF'
     },
     "permissions" : {
       "view" : [ "admin", "user" ],
-      "edit" : [ "admin", "user" ]
+      "edit" : [ "admin" ]
     },
     "multivalued" : false
   }, {
@@ -64,7 +64,7 @@ $KCADM update users/profile -r $REALM -f - <<'EOF'
     },
     "permissions" : {
       "view" : [ "admin", "user" ],
-      "edit" : [ "admin", "user" ]
+      "edit" : [ "admin" ]
     },
     "multivalued" : false
   }, {
@@ -81,7 +81,7 @@ $KCADM update users/profile -r $REALM -f - <<'EOF'
     },
     "permissions" : {
       "view" : [ "admin", "user" ],
-      "edit" : [ "admin", "user" ]
+      "edit" : [ "admin" ]
     },
     "multivalued" : false
   }, {
@@ -90,7 +90,7 @@ $KCADM update users/profile -r $REALM -f - <<'EOF'
     "validations" : { },
     "annotations" : { },
     "permissions" : {
-      "view" : [ ],
+      "view" : [ "admin", "user" ],
       "edit" : [ "admin" ]
     },
     "multivalued" : false
@@ -100,7 +100,7 @@ $KCADM update users/profile -r $REALM -f - <<'EOF'
     "validations" : { },
     "annotations" : { },
     "permissions" : {
-      "view" : [ ],
+      "view" : [ "admin", "user" ],
       "edit" : [ "admin" ]
     },
     "multivalued" : false
@@ -114,3 +114,5 @@ $KCADM update users/profile -r $REALM -f - <<'EOF'
 EOF
 
 $KCADM get users/profile -r $REALM
+
+#$KCADM get users/7f90e03b-a3e0-45f1-b6c9-5855e8f7858e -r $REALM

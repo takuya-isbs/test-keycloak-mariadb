@@ -452,4 +452,39 @@ update_execution(flow_alias_fbl, flow_display_name_fbl_review, "DISABLED")
 update_execution(flow_alias_fbl, flow_display_name_fbl_create, "DISABLED")
 
 
+# Example of creating users
+username = "testuser1"
+email = "testuser1@example.org"
+firstName = 'first1'
+lastName = 'last1'
+userid = kapi.create_user(
+    {
+        'username': username,
+        'enabled': True,
+    }, exist_ok=True)
+print(f'create user: username={username}, userid={userid}')
+
+userid = kapi.get_user_id(username)
+localacc_str = json.dumps({"host1.example.com": "user1000", "host2.example.org": "user2000"})
+kapi.update_user(
+    userid,
+    {
+        'attributes': {
+            'email': email,  # ??? cannot updated by API
+            #'emailVerified': True,  # for test...
+            'firstName': firstName,
+            'lastName': lastName,
+            'hpci.id': username,
+            'local-accounts': localacc_str,
+        }
+    })
+
+# for test users...
+password = "pass"
+kapi.set_user_password(userid, password, temporary=False)
+
+user = kapi.get_user(userid)
+print(str(user))
+
+
 print('### DONE ####')

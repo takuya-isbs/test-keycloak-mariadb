@@ -188,8 +188,8 @@ DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
       - ./keycloak-config-for-localhost.sh は、keycloak コンテナ内で kcadm.sh を使って設定している
 - 各 kc? ノードそれぞれで以下を実行
   - ./up.sh jwt-server
-- 後述「テスト」を参照
-  - このタイミングでは、まだ Keycloak のユーザー未登録なので、jwt-server にログインはできない
+- https://jwt-server/ には testuser1,pass でログイン可能
+- 後述「テスト」を参照して試す
 
 次に、keycloak-old を起動している場合 (keycloak コンテナ (Keycloak 24) では不要) は、
 以下の操作をおこなう。
@@ -322,23 +322,19 @@ LXD コンテナをすべて削除する。
 
 - squid 経由で https://keycloak.example.org に接続 (Web ブラウザ)
 - admin:admin でログイン
-- レルム作成、ユーザ作成、ユーザ詳細画面表示したままにしておく
+- HPCI レルムを表示
+- testuser1 ユーザ詳細画面表示したままにしておく
 - lxc ls で IPアドレスを確認
   - ./myip.sh を LXD コンテナそれぞれで実行するでも良い
-- 10.60.204.11 のアドレスも追加でついているコンテナで操作
+- 10.60.204.11 のアドレス (VIP) も追加でついているコンテナで操作
   - docker compose restart keepalived
   - ./myip.sh
 - 10.60.204.11 のアドレスが他のノードに移転されたことを確認
 - ユーザ詳細画面をリロード
-- 再度ログイン画面が出ずにユーザ詳細画面のままであれば成功
+- ログイン画面が再度出ずにユーザ詳細画面のままであれば成功
 
 ### jwt-server の動作確認
 
-- HPCI レルムにユーザを作成、属性(Attributes)にキー hpci.id、値をユーザ名として設定して保存
-  - Credentials でパスワードをセットする (テンポラリ状態を解除する)
-  - Keycloak 24 では属性タブが廃止された
-    - レルム設定に User Profile タブがあるので、そこに hpci.id を追加する
-    - その後、ユーザの設定に hpci.id が増えているので、値を入れる
 - squid 経由で https://jwtserver.example.org に接続 (Web ブラウザ)
 - make shell@manage にて jwt-agent を起動
   - ./install-jwt-agent.sh
@@ -404,3 +400,5 @@ DB バックアップを作成しておく。
 ### TODO
 
 - パラメータの一元管理
+- SAML IdP 連携を API で格納
+
