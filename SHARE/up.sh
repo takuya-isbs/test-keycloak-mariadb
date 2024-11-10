@@ -37,10 +37,14 @@ COMPOSE() {
     MY_HOSTNAME=$HOSTNAME MY_IPADDR=$MY_IPADDR docker compose "$@"
 }
 
-if [ "$CONTAINER" = "ALL" ]; then
-    COMPOSE up -d --no-recreate jwt-server nginx keepalived keycloak
+if [ "$CONTAINER" = "INIT" ]; then
+    COMPOSE up -d --no-recreate nginx keepalived keycloak
+elif [ "$CONTAINER" = "ALL" ]; then
+    COMPOSE up -d --no-recreate nginx keepalived keycloak jwt-server
+elif [ "$CONTAINER" = "INIT-OLD" ]; then
+    COMPOSE up -d --no-recreate nginx keepalived keycloak-old
 elif [ "$CONTAINER" = "ALL-OLD" ]; then
-    COMPOSE up -d --no-recreate jwt-server nginx keepalived keycloak-old
+    COMPOSE up -d --no-recreate nginx keepalived keycloak-old jwt-server
 elif [ -n "$CONTAINER" ]; then
     # recreate (a container) mode
     COMPOSE up -d --force-recreate "$CONTAINER"

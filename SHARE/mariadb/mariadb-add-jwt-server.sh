@@ -2,7 +2,7 @@
 set -eu
 
 # by root
-mariadb -u root <<EOF
+mariadb -u root -vvv <<EOF
 SET @username = '${JWTSERVER_DB_USER}';
 SET @host = '%';
 SET @password = '${JWTSERVER_DB_PASSWORD}';

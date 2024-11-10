@@ -40,6 +40,7 @@ services:
       - ./mariadb/initdb.d/sysbench.sql:/docker-entrypoint-initdb.d/sysbench.sql:ro
       - ./hostlist.txt:/hostlist.txt:ro
       - ./mariadb/mariadb-add-jwt-server.sh:/mariadb-add-jwt-server.sh:ro
+      - ./mariadb/mariadb-unlimit-keycloak-USER_ATTRIBUTE.sh:/mariadb-unlimit-keycloak-USER_ATTRIBUTE.sh:ro
     environment:
       - TZ=${TZ}
       - WSREP_NODE_ADDRESS=${WSREP_NODE_ADDRESS:-}

@@ -2,4 +2,9 @@
 set -eu
 set -x
 
-WSREP_NEW_CLUSTER=no WSREP_NODE_ADDRESS=$(hostname) docker compose up -d --no-recreate mariadb
+./mariadb-stop.sh
+./fluentd-start.sh
+
+WSREP_NEW_CLUSTER=no WSREP_NODE_ADDRESS=$(hostname) docker compose up -d --force-recreate mariadb
+
+./mariadb-wait.sh

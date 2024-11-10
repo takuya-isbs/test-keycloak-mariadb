@@ -111,34 +111,34 @@ DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
 - (option: Dockerfile イメージを再ビルドする場合)
   - docker compose build
 - ./setup-glusterfs.sh
-  - 初期ノードのみで実行
-- ./mariadb-stop.sh
-- ./fluentd-start.sh
+  - 初期ノードのみで実行する
+  - /mnt/glusterfs にマウントされる
+  - 以降で起動する Docker コンテナを停止しても、このマウントポイントは停止しない
 - ./mariadb-new.sh
   - 初回、DB クラスタ作成時のみ実行する。
-- 起動を確認:
-  - ./mariadb-status.sh
+  - (メモ) 内部で ./fluentd-start.sh を実行している。
+  - (メモ) 内部で ./mariadb-wait.sh を実行している。
 - (option: バックアップデータから戻す場合)
-  - (このタイミングでリストアする)
+  - このタイミングでリストアする
   - ./mariadb-restore.sh ./BACKUP/ファイル名
 - ./mariadb-init-jwt-server.sh
+  - (リストア時には実行不要)
   - jwt-server 用のユーザを DB に追加
   - 何度実行しても問題ない。
 
 ### 追加 DB ノード構築・参加 (2台目以降)
 
+- (このセクションの操作は、後述の Keycloak コンテナなど起動に関して、初期ノードのみ起動した後でおこなっても良い)
 - `make shell@kc2`
   - or `make shell@kc3`
   - (kc1 を再参加する場合も同様)
 - (option: イメージ再ビルドする場合)
   - docker compose build
-- ./mariadb-stop.sh
-- ./fluentd-start.sh
 - ./mariadb-join.sh
   - 2台目以降参加する場合
   - 間違えて ./mariadb-new.sh を実行した場合
-    - 所属できない
-    - 他のノードに影響は無い
+    - 初期ノードと同じ mariadb クラスタに所属できない
+    - 間違えても他のノードに影響は無い
     - docker compose down -v で初期化してやりなおす
 - 起動を確認:
   - ./mariadb-status.sh
@@ -150,36 +150,55 @@ DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
   - 3 台とも Synced になるまで確認して待つ
   - ctrl-c で停止
 
-### mariadb 以外のコンテナ起動
+### Keycloak コンテナなど起動 (mariadb 以外のコンテナ起動)
 
-上記のように mariadb 起動後、各 kc? ノードにて以下を実行する。
+上記のように mariadb 起動後、全 kc? ノードそれぞれにて、以下を実行する。
+最初に起動したノードが代表ノードになる。
 
-- ./up.sh ALL
-  - 処理概要
+- ./up.sh INIT
+  - 処理内容概要
     - ホスト名から IP アドレスを推定
     - docker compose up -d --no-recreate を実行
-    - 初回はここではまだ jwt-server が正常起動しない
-- 間違えて --no-recreate をつけずに docker compose up -d してしまった場合
-  - mariadb が起動しなくなる
-  - 再度 mariadb をクラスタに所属しなおす
+    - 初期ノード初回実行時、ここではまだ jwt-server は起動しない
+      - Keycloak にまだ jwt-server の設定をしていないため
+- 間違えて up.sh を使わず --no-recreate をつけずに docker compose up -d を実行してしまった場合
+  - mariadb が起動しない
+  - 以下を実行し、再度 mariadb をクラスタに所属しなおす
   - docker compose down -v --remove-orphans
-  - ./fluentd-start.sh
   - ./mariadb-join.sh
-  - ./mariadb-status.sh
 
 ## Keycloak 初期設定
 
-jwt-server が動作するための設定を Keycloak に投入する。
-
 以下の手順では、Keycloak の Web UI を操作せずに、Keycloak の API を Python プログラムから呼び出して設定をおこなう。
+
+この手順をおこなうには、Keycloak が 1 台以上のノードで動作していれば良い。
 
 - make shell@manage
 - ./install-keycloak-api.sh
+- (Keycloak が起動するまで待つ)
+  - TODO ./keycloak-wait.sh を用意する
 - ./keycloak-config.sh
-- 各 kc? ノードにて、以下を実行
+  - ### DONE #### のあと TypeError: 'NoneType' object is not callable  になるが問題ない
+    - 処理がすべて完了したあとにエラーが発生する
+    - Python 3.12 など新しくすると治るので、ライブラリの問題と考えている
+- 各 kc? ノードそれぞれで以下を実行
   - ./up.sh jwt-server
 - 後述「テスト」を参照
-  - ここでは、まだユーザーが無いので、jwt-serverにログインはできない
+  - このタイミングでは、まだ Keycloak のユーザー未登録なので、jwt-server にログインはできない
+
+次に、keycloak-old を起動している場合 (keycloak コンテナ (Keycloak 24) では不要) は、
+以下の操作をおこなう。
+
+(MEMO: Keycloak 24 から、ユーザ拡張属性のサイズ制限が無くなった。)
+  https://www.keycloak.org/docs/latest/release_notes/index.html#user-attribute-value-length-extension
+
+Keycloak が動作しているノード一台で、以下を実行する。
+(データベースの USER_ATTRIBUTE 領域の最大サイズを拡張するための操作。)
+
+- make shell@kc1
+- ./mariadb-init-keycloak.sh
+
+VALUE の Type が varchar(255) から mediumtext に変わっていれば成功。
 
 ## squid 経由でウェブブラウザアクセス
 
@@ -251,27 +270,30 @@ LocalForward 57000 {manageコンテナのIPアドレス}:13128
 
 - 別の方法
   - 各ノードの DB データを破棄 (後述)
-  - バックアップデータからリストアして起動する
+  - バックアップデータからリストアして起動
 
 ## 単体 DB データ破棄(故障想定)
 
 - make shell@???
 - docker compose down -v --remove-orphans
-  - そのノードの Docker コンテナ・データが全部消える。
+  - そのノードの Docker コンテナ・データが全て消える。
 - 再度「追加ノード構築・参加」の手順にて再構築可能
-  - 初期ノード (mariadb-new.sh を実行した) かどうかは無関係
-- 全ノードの DB を破棄した場合は、「初期 DB ノード構築」から再構築する
+  - そのノードが、以前、初期ノード (mariadb-new.sh を実行した) だったかどうかは無関係
+- 全ノードの DB を破棄した場合は、「初期 DB ノード構築」から再構築する。
 
 ## コンテナ再構築
 
-docker-compose.yaml や .env を更新した場合は以下の方法でコンテナを再構築する。
+docker-compose.yaml や .env を更新した場合は、コンテナを再構築する必要がある。
+
+mariadb コンテナを再構築するには、上記「単体 DB データ破棄」の項目参照。
+
+mariadb 以外の コンテナについて、以下を実行する。
 
 - ./recreate.sh keycloak
 - ./recreate.sh nginx
 - ./recreate.sh keepalived
 - ./recreate.sh squid
 
-mariadb コンテナ再構築は、上記「単体 DB データ破棄」の項目参照
 
 ## 全ノード破棄 (完全初期化)
 
@@ -347,10 +369,10 @@ DB バックアップを作成しておく。
   - その後同様に更新する
   - docker compose start keepalived
 
-### 無停止で Keycloak を大幅更新
+### 無停止で Keycloak を大幅更新の練習
 
 - (WildFly版[~v16] から Quarkus版[v17~] への更新)
-- 新規構築時: ./up.sh ALL-OLD で全体を一旦構築
+- 新規構築時: (INIT の代わりに) ./up.sh INIT-OLD を使用して全体を構築
 - ウェブブラウザで Keycloak, jwt-server にログインしておく。
 - jwt-agent を起動しておく。(動作確認目的)
 - VIP が付いていないノード(2台)にて
@@ -367,8 +389,9 @@ DB バックアップを作成しておく。
 - Keycloak ログイン中のウェブブラウザはエラーになった。
   - 再度ログインしなおすと正常表示できた。
 - jwt-agent は動き続けた。
+- TODO user attribute 領域はどうなったか確認 (Keycloak 24 から仕様が変わったので)
 
 ### Keycloak バージョンダウンはできない
 
-- Web UI でログインできなくなった。
+- 試したところ Web UI でログインできなくなった。
 - 対応していないようだ。
