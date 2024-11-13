@@ -1,6 +1,6 @@
 # hosts
 
-testkc-kc1
- testkc-kc2
-testkc-kc3  
+testkeycloak-kc1
+ testkeycloak-kc2
+testkeycloak-kc3  
 ### ignore last space

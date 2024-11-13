@@ -37,7 +37,9 @@
 
 ## 必要
 
-- LXD
+- LXD のインストール (ここでは説明省略)
+  - 以下の手順では LXD のストレージプールは default を使用する。
+  - 以下の手順では LXD の profile, network が自動作成される。
 - Disk (LXD storage pool): 200GB
 - Memory: 16GB
 
@@ -90,11 +92,13 @@ NO_PROXY=192.168.0.10
 DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
 ```
 
+## クイックスタート
+
+- ./ALL.sh
+  - 後述の手順をスクリプト化したもの
+
 ## 環境構築手順
 
-- LXD のインストール (ここでは説明省略)
-  - 以下の手順では LXD のストレージプールは default を使用する。
-  - LXD の profile, network が自動作成される。
 - ./00_init.sh
   - LXD 自体に http_proxy を設定
 - ./01_create-hosts.sh
@@ -184,8 +188,11 @@ DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
 - kc1 ノードで以下を実行 (keycloak-old コンテナ使用時は実行不要)
   - ./keycloak-config-for-localhost.sh
     - 補足: manage コンテナだけでは設定が不十分となっているため
-      - python-keycloak は、users/profile API を発行できないため
+      - python-keycloak は、users/profile API を発行できないため、カスタム user attributes を格納できない
       - ./keycloak-config-for-localhost.sh は、keycloak コンテナ内で kcadm.sh を使って設定している
+    - TODO keycloak-config.sh だけで設定できるように python-keycloak の低レベル関数を利用して直接 API を利用する案
+- もう一度 manage コンテナで ./keycloak-config.sh を実行
+  - user attributes を再度格納するため
 - 各 kc? ノードそれぞれで以下を実行
   - ./up.sh jwt-server
 - https://jwt-server/ には testuser1,pass でログイン可能

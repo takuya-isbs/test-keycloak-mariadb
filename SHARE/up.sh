@@ -7,7 +7,7 @@ CONTAINER=${1:-}
 
 # TODO common.sh
 IPADDR_PREFIX=10.60.204
-PROJECT="testkc"
+PROJECT="testkeycloak"
 
 HOSTNAME=$(hostname)
 HOST_SUFFIX=${HOSTNAME#"${PROJECT}-"}

@@ -2,15 +2,20 @@
 set -eu
 set -x
 
+PROJECT=testkeycloak
 DATADIR=/data/glusterfs
+VOLNAME=log-volume
 
 mkdir -p $DATADIR
 
-gluster peer probe testkc-kc2
-gluster peer probe testkc-kc3
+gluster volume info $VOLNAME && exit 0
+
+gluster peer probe ${PROJECT}-kc2
+gluster peer probe ${PROJECT}-kc3
 
 # force: use / partition
-gluster volume create log-volume replica 3 testkc-kc1:${DATADIR}/brick1 testkc-kc2:${DATADIR}/brick2 testkc-kc3:${DATADIR}/brick3 force
-gluster volume start log-volume
+gluster volume create $VOLNAME replica 3 ${PROJECT}-kc1:${DATADIR}/brick1 ${PROJECT}-kc2:${DATADIR}/brick2 ${PROJECT}-kc3:${DATADIR}/brick3 force
+gluster volume start $VOLNAME
 
-#gluster volume set log-volume auth.allow 10.60.204.101,10.60.204.102,10.60.204.103
+#TODO
+#gluster volume set $VOLNAME auth.allow 10.60.204.101,10.60.204.102,10.60.204.103

@@ -2,7 +2,13 @@
 set -eu
 set -x
 
-apt-get install -y python3-pip
+apt-get install -y python3-pip python3-venv
+
+VENV_DIR=${HOME}/venv
+
+python3 -m venv $VENV_DIR
+. ${VENV_DIR}/bin/activate
+
 pip3 install python-keycloak
 
 # RHEL
@@ -24,4 +30,4 @@ chown root:root "$CA_DST"
 
 $SYSTEM_CERT_UPDATE
 
-echo "Execute: export SYSTEM_CERT_BUNDLE=${SYSTEM_CERT_BUNDLE}"
+echo "Execute: export REQUESTS_CA_BUNDLE=${SYSTEM_CERT_BUNDLE}"

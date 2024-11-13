@@ -3,8 +3,9 @@
 set -eu
 set -x
 
-NO_PROXY_DEFAULT="localhost,127.0.0.1,testkc-manage"
-DOCKER_REGISTRY_PROXY_DEFAULT="http://testkc-manage:50000,http://testkc-manage:50001"
+PROJECT="testkeycloak"
+NO_PROXY_DEFAULT="localhost,127.0.0.1,${PROJECT}-manage"
+DOCKER_REGISTRY_PROXY_DEFAULT="http://${PROJECT}-manage:50000,http://${PROJECT}-manage:50001"
 
 HTTP_PROXY="$1"
 HTTPS_PROXY="$2"

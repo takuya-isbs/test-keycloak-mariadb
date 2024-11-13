@@ -1,5 +1,5 @@
-PROJECT="testkc"
-LXD_IMAGE=ubuntu:22.04
+PROJECT="testkeycloak"
+LXD_IMAGE=ubuntu:24.04
 IPADDR_PREFIX=10.60.204
 
 HOST1="${PROJECT}-kc1"

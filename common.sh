@@ -1,6 +1,10 @@
 source ./default.sh
 [ -f ./config.sh ] && source ./config.sh
 
+list_hosts() {
+    $LXC ls -f compact ${PROJECT}-
+}
+
 lxc_exist() {
     len=$($LXC ls -f compact $1 | wc -l)
     if [ $len -ge 2 ]; then
@@ -9,9 +13,17 @@ lxc_exist() {
     return 1  # False
 }
 
-exec_para() {
-    HOSTS="$1"
+lxc_exec() {
+    local HOST="$1"
     shift
+    local FULLNAME=${PROJECT}-${HOST}
+    $LXC exec $FULLNAME --cwd /SHARE -- "$@"
+}
+
+exec_para() {
+    local HOSTS="$1"
+    shift
+    local HOST
     for HOST in $HOSTS; do
 	FULLNAME=${PROJECT}-${HOST}
 	eval "HOST_${HOST}_tmp=\$(mktemp --suffix=${PROJECT}.log)"

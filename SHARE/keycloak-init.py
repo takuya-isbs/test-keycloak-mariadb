@@ -235,7 +235,7 @@ mapper_hpciver = {
     "consentRequired": False,
     "protocolMapper": "oidc-hardcoded-claim-mapper",
     "config": {
-        "claim.name": "hpci\.ver",
+        "claim.name": "hpci\\.ver",
         "claim.value": "1.0",
         "jsonType.label": "String",
         "userinfo.token.claim": True,
@@ -252,7 +252,7 @@ mapper_hpciid = {
     "consentRequired": False,
     "protocolMapper": "oidc-usermodel-attribute-mapper",
     "config": {
-        "claim.name": "hpci\.id",
+        "claim.name": "hpci\\.id",
         "user.attribute": "hpci.id",
         "jsonType.label": "String",
         "userinfo.token.claim": False,
