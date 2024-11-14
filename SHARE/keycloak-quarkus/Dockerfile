@@ -1,5 +1,5 @@
 ARG KEYCLOAK_IMAGE=keycloak/keycloak:24.0
-FROM $KEYCLOAK_IMAGE as builder
+FROM $KEYCLOAK_IMAGE AS builder
 
 # RUN /opt/keycloak/bin/kc.sh build
 

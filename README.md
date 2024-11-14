@@ -90,6 +90,9 @@ NO_PROXY=192.168.0.10
 
 ## 自前で registry proxy を設置した場合
 DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
+
+## default ストレージプール以外を使用する場合
+LXD_POOL=disk1
 ```
 
 ## クイックスタート
@@ -154,9 +157,11 @@ DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
   - 3 台とも Synced になるまで確認して待つ
   - ctrl-c で停止
 
-### Keycloak コンテナなど起動 (mariadb 以外のコンテナ起動)
+### Keycloak コンテナなど起動
 
-上記のように mariadb 起動後、全 kc? ノードそれぞれにて、以下を実行する。
+ここではmariadb, jwt-server 以外のコンテナを起動する。
+
+kc1 ノードにて、以下を実行する。
 最初に起動したノードが代表ノードになる。
 
 - ./up.sh INIT
@@ -193,8 +198,10 @@ DOCKER_REGISTRY_PROXY=http://192.168.0.10:50000,http://192.168.0.10:50001
     - TODO keycloak-config.sh だけで設定できるように python-keycloak の低レベル関数を利用して直接 API を利用する案
 - もう一度 manage コンテナで ./keycloak-config.sh を実行
   - user attributes を再度格納するため
-- 各 kc? ノードそれぞれで以下を実行
+- kc1 ノードで以下を実行
   - ./up.sh jwt-server
+- 残りの kc1,kc2 ノードそれぞれで以下を実行
+  - ./up.sh ALL
 - https://jwt-server/ には testuser1,pass でログイン可能
 - 後述「テスト」を参照して試す
 

@@ -19,7 +19,9 @@ lxc_exec manage ./install-keycloak-api.sh
 lxc_exec manage ./keycloak-config.sh
 lxc_exec kc1 ./keycloak-config-for-localhost.sh
 # re-update to set user attributes
+# TODO use ./keyclaok-add-user.sh instead of ./keycloak-config.sh
 lxc_exec manage ./keycloak-config.sh
+
 lxc_exec kc1 ./up.sh jwt-server
-lxc_exec kc2 ./up.sh jwt-server
-lxc_exec kc3 ./up.sh jwt-server
+lxc_exec kc2 ./up.sh ALL
+lxc_exec kc3 ./up.sh ALL

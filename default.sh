@@ -1,6 +1,9 @@
 PROJECT="testkeycloak"
 LXD_IMAGE=ubuntu:24.04
+LXD_POOL=default
 IPADDR_PREFIX=10.60.204
+
+LXC=lxc
 
 HOST1="${PROJECT}-kc1"
 HOST_MANAGE="${PROJECT}-manage"
@@ -9,5 +12,3 @@ HOSTS="${DB_HOSTS} manage"
 NETWORK_NAME=$PROJECT
 PROFILE_NAME=${PROJECT}-prof
 VIP="${IPADDR_PREFIX}.11"
-
-LXC=lxc

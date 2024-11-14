@@ -86,7 +86,7 @@ $KCADM update users/profile -r $REALM -f - <<'EOF'
     "multivalued" : false
   }, {
     "name" : "hpci.id",
-    "displayName" : "${hpci_id}",
+    "displayName" : "${hpci.id}",
     "validations" : { },
     "annotations" : { },
     "permissions" : {
@@ -96,7 +96,7 @@ $KCADM update users/profile -r $REALM -f - <<'EOF'
     "multivalued" : false
   }, {
     "name" : "local-accounts",
-    "displayName" : "${local_accounts}",
+    "displayName" : "${local-accounts}",
     "validations" : { },
     "annotations" : { },
     "permissions" : {

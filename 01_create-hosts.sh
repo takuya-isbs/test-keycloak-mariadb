@@ -32,8 +32,9 @@ devices:
     type: nic
   root:
     path: /
-    pool: default
+    pool: ${LXD_POOL}
     type: disk
+    size: 40GB
   share:
     source: ${PWD}/SHARE
     path: /SHARE

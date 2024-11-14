@@ -26,6 +26,7 @@ wait_for_keycloak_startup() {
         echo -n "."
     done
 }
+echo
 wait_for_keycloak_startup $KEYCLOAK_URL
 
 . ${VENV_DIR}/bin/activate
