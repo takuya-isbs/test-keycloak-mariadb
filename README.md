@@ -257,9 +257,20 @@ LocalForward 57000 {manageコンテナのIPアドレス}:13128
 - 停止
   - docker compose stop
   - (ホストを停止可能な状態になる)
+  - (他のノードに VIP が移転する)
 - 再開
-  - ./fluentd-start.sh
-  - docker compose start
+  - ./mariadb-join.sh
+  - ./up.sh ALL
+  - (待機ノードの一つになる)
+- ヘルスチェックをおこなう
+
+## 単体ノードのみ異常停止から復旧
+
+- (間違えて停止や、一部停電などを想定)
+- lxc restart testkeycloak-kc1
+- ./mariadb-join.sh
+- ./up.sh ALL
+- ヘルスチェックをおこなう
 
 ## 全ノード停止・再開
 
@@ -267,6 +278,7 @@ LocalForward 57000 {manageコンテナのIPアドレス}:13128
   - 全ノードの Keycloak, jwt-server を停止する
     - docker compose stop keycloak
     - docker compose stop jwt-server
+    - (以降 DB が更新されることが無い)
   - ./mariadb-backup.sh を念のため実行
   - kc3, kc2, kc1 の順で一つずつ mariadb コンテナ停止
     - ./mariadb-stop.sh; sleep 5
@@ -276,23 +288,25 @@ LocalForward 57000 {manageコンテナのIPアドレス}:13128
   - ログが消える (TODO ログの永続化)
 
 - 起動手順
-  - ./mariadb-show-bootstrap.sh が safe_to_bootstrap: 1 となるホストを探す
+  - make mariadb-bootstrap
+    - ./mariadb-show-bootstrap.sh が safe_to_bootstrap: 1 となるノードを探す
     - 最後に停止したコンテナが 1 になっている
-  - safe_to_bootstrap: 1 のホストにて
-    - ./mariadb-stop.sh を念のため実行
+  - safe_to_bootstrap: 1 のノードにて以下を実行
+    - (make shell@対象ノード)
     - ./mariadb-new.sh
     - ./up.sh ALL
   - その他ノード
-    - ./mariadb-stop.sh を念のため実行
     - ./mariadb-join.sh
     - ./up.sh ALL
+  - ヘルスチェックをおこなう
 
 - 別の方法
   - 各ノードの DB データを破棄 (後述)
   - バックアップデータからリストアして起動
 
-## 単体 DB データ破棄(故障想定)
+## 単体 DB データ破棄
 
+- (故障想定)
 - make shell@???
 - docker compose down -v --remove-orphans
   - そのノードの Docker コンテナ・データが全て消える。

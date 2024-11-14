@@ -207,10 +207,11 @@ services:
       KEEPALIVED_PASSWORD: ${KEEPALIVED_PASSWORD:-SzVzOEFeXW9zEws02iPz645urNVGxUsB}
     <<: [*common]
 
+  # use ./fluentd-start.sh instead of docker compose
   fluentd:
     #image: fluent/fluentd:v1.17-1
     image: fluent/fluentd:v1.17-debian
-    restart: "always"
+    restart: "no"
     init: true
     volumes:
       - ./fluent.conf:/fluentd/etc/fluent.conf
