@@ -2,33 +2,16 @@
 set -eu
 #set -x
 
-SYSTEM_CERT_BUNDLE=/etc/ssl/certs/ca-certificates.crt
-VENV_DIR=${HOME}/venv
+COMPOSE="docker compose -f ./compose-manage.yml"
 
-KEYCLOAK_URL=https://keycloak.example.org/auth/
+CONFIG_PY_URL=https://raw.githubusercontent.com/oss-tsukuba/gfarm/fe905dcaa2fd047a02a75c61065e99fc136b9cec/docker/dist/jwt-server/setup-keycloak/keycloak-config.py
 
-export https_proxy=http://localhost:13128
+if [ ! -f ./setup-keycloak/keycloak-config.py ]; then
+    curl -o ./setup-keycloak/keycloak-config.py $CONFIG_PY_URL
+fi
+chmod a+r ./setup-keycloak/keycloak-config.py
 
-#TODO in keycloak-init.py
-get_code() {
-    curl -s -k -L -w '%{http_code}' "$1" -o /dev/null
-}
-wait_for_keycloak_startup() {
-    local URL="$1"
-    local EXPECT='^[23]0.*$'
-    while :; do
-        if CODE=$(get_code "$URL"); then
-            if [[ "$CODE" =~ ${EXPECT} ]]; then
-                break
-            fi
-        fi
-        sleep 1
-        echo -n "."
-    done
-}
-echo
-wait_for_keycloak_startup $KEYCLOAK_URL
+#$COMPOSE run --remove-orphans --rm -it setup-keycloak /bin/bash
 
-. ${VENV_DIR}/bin/activate
-export REQUESTS_CA_BUNDLE=${SYSTEM_CERT_BUNDLE}
-python3 keycloak-init.py
+$COMPOSE run --remove-orphans --rm -it setup-keycloak \
+       python3 /setup-keycloak/keycloak-config.py /setup-keycloak/keycloak-config.yaml

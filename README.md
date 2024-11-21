@@ -184,13 +184,9 @@ kc1 ノードにて、以下を実行する。
 
 - make shell@manage
 - ./install-keycloak-api.sh
-- (Keycloak が起動するまで待つ)
-  - TODO ./keycloak-wait.sh を用意する
 - ./keycloak-config.sh
-  - ### DONE #### のあと TypeError: 'NoneType' object is not callable  になるが問題ない
-    - 処理がすべて完了したあとにエラーが発生する
-    - Python 3.12 など新しくすると治るので、ライブラリの問題と考えている
-- kc1 ノードで以下を実行 (keycloak-old コンテナ使用時は実行不要)
+- kc1 ノードで以下を実行
+  - (keycloak-old コンテナ使用時は実行不要)
   - ./keycloak-config-for-localhost.sh
     - 補足: manage コンテナだけでは設定が不十分となっているため
       - python-keycloak は、users/profile API を発行できないため、カスタム user attributes を格納できない
@@ -202,7 +198,7 @@ kc1 ノードにて、以下を実行する。
   - ./up.sh jwt-server
 - 残りの kc1,kc2 ノードそれぞれで以下を実行
   - ./up.sh ALL
-- https://jwt-server/ には testuser1,pass でログイン可能
+- https://jwt-server/ には user1,PASSWORD でログイン可能
 - 後述「テスト」を参照して試す
 
 次に、keycloak-old を起動している場合 (keycloak コンテナ (Keycloak 24) では不要) は、

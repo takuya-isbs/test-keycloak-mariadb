@@ -7,3 +7,4 @@
 /SHARE/certs/keycloak.example.org/
 /SHARE/BACKUP/
 /SHARE/jwt-agent/
+/SHARE/setup-keycloak/keycloak-config.py

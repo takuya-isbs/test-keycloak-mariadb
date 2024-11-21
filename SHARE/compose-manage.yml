@@ -39,3 +39,10 @@ services:
     volumes:
       - ./squid-allow-ssl-ports.conf:/etc/squid/conf.d/allow-ssl-ports.conf:ro
     <<: [*common]
+
+  setup-keycloak:
+    build: https://github.com/oss-tsukuba/gfarm.git#2.8:docker/dist/jwt-server/setup-keycloak
+    volumes:
+      - /SHARE/certs/minica.pem:/myca.pem:ro
+      - ./setup-keycloak:/setup-keycloak:ro
+    <<: [*common]

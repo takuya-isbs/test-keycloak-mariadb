@@ -1,0 +1,9 @@
+keycloak_url: https://keycloak.example.org/auth/
+admin_username: admin
+admin_password: admin
+realm_master: master
+realm: HPCI
+client_secret: aRbmg6oLjjDa2OZnpy8vnKeIBJjcawpa
+jwt_server_urls:
+  - https://jwtserver.example.org/*
+verify_cert: true
