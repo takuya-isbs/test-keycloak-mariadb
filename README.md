@@ -6,11 +6,14 @@
 
 - LXD を利用し、実ホストと実ネットワークを想定した環境を構築
   - LXD コンテナは、固定 IP アドレス
+  - LXD コンテナを実ホストマシンとみなして利用
   - LXD 自体は、実環境では利用しない想定
 - 3 台のホスト相当 (LXD コンテナノード) が同一ネットワークに存在
 - それぞれの LXD コンテナノードに Docker をインストール
 - それぞれのノードにて、docker compose でアプリ一式を起動
   - アプリ一式が実環境でも動作することを想定
+  - ログを fluentd コンテナに転送
+  - fluentd コンテナは、各ノード間を gluster で連携した領域にログを保存
 - MariaDB Galera cluster で DB を冗長化
   - 全ノード停止しない前提
   - 破損したら再構築して再所属すれば復旧
@@ -20,10 +23,10 @@
 - それぞれのノードで jwt-server が動作
   - https://github.com/oss-tsukuba/jwt-server
   - Keycloak で認証・ログイン
-- 代表アドレスで Keycloak にアクセス
+- 代表アドレス (VIP) で Keycloak にアクセス
   - Keepalived (VRRP) 利用
-  - NGINX で https 化、リバースプロキシ
-- Keepalived が無応答で他のノードが代表に昇格
+  - keepalived コンテナが無反応で、VIP が他ノードに移転
+- NGINX で https 化、リバースプロキシ
 - manage ノード (LXD コンテナ)
   - 上記 3 ノードとは別のホスト
     - 管理ホストやクライアントを想定した用途
@@ -33,7 +36,7 @@
     - Docker イメージをキャッシュ (高速化、通信節約)
     - 外部に設置しても良い
   - ここを起点に Keycloak の API を使って設定
-  - jwt-agent の動作確認
+  - jwt-agent の動作確認可能
 
 ## 必要
 
