@@ -175,8 +175,10 @@ services:
       mynet:
     ports:
       - "443:443"
+      - "2222:2222"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d/:/etc/nginx/conf.d/:ro
       - ./certs/keycloak.example.org/cert.pem:/etc/nginx/cert.pem:ro
       - ./certs/keycloak.example.org/key.pem:/etc/nginx/key.pem:ro
       - ./certs/dummy.example.org/cert.pem:/etc/nginx/dummycert.pem:ro

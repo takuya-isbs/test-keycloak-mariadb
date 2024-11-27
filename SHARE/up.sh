@@ -38,15 +38,14 @@ COMPOSE() {
 }
 
 if [ "$CONTAINER" = "INIT" ]; then
-    COMPOSE up -d --no-recreate nginx keepalived keycloak
+    COMPOSE up -d --force-recreate nginx keepalived keycloak
 elif [ "$CONTAINER" = "ALL" ]; then
-    COMPOSE up -d --no-recreate nginx keepalived keycloak jwt-server
+    COMPOSE up -d --force-recreate nginx keepalived keycloak jwt-server
 elif [ "$CONTAINER" = "INIT-OLD" ]; then
-    COMPOSE up -d --no-recreate nginx keepalived keycloak-old
+    COMPOSE up -d --force-recreate nginx keepalived keycloak-old
 elif [ "$CONTAINER" = "ALL-OLD" ]; then
-    COMPOSE up -d --no-recreate nginx keepalived keycloak-old jwt-server
+    COMPOSE up -d --force-recreate nginx keepalived keycloak-old jwt-server
 elif [ -n "$CONTAINER" ]; then
-    # recreate (a container) mode
     COMPOSE up -d --force-recreate "$CONTAINER"
 else
     echo "Usage: ./up.sh ALL|<CONTAINER_NAME>"
