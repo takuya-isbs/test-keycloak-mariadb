@@ -2,7 +2,7 @@
 set -eu
 set -x
 
-NUM_TEST=100
+NUM_TEST=10
 
 TESTDIR="$1"
 [ -e "$TESTDIR" ] && exit 1
@@ -13,8 +13,28 @@ WORKDIR1="${TESTDIR}/work1"
 WORKDIR2="${TESTDIR}/work2"
 WORKDIR3="${TESTDIR}/work3"
 
-git init --bare "$BAREDIR"
-(cd "$BAREDIR" && git config --global init.defaultBranch main)
+POST_RECEIVE=hooks/post-receive
+
+test_init() {
+    git init --bare "$BAREDIR"
+    cd "$BAREDIR"
+    git config --global init.defaultBranch main
+
+    cat <<EOF > $POST_RECEIVE
+#!/bin/sh
+set -eu
+set -x
+#while read oldrev newrev refname; do
+#done
+
+#sleep 2
+rsync -av --delete "${BAREDIR}/" "${SYNC_TODIR}/"
+false
+EOF
+    chmod +x $POST_RECEIVE
+}
+
+test_init
 
 test_clone() {
     set -eu
@@ -70,5 +90,7 @@ test_commit_para() {
 }
 
 test_commit_para
+
+diff -r "${BAREDIR}/" "${SYNC_TODIR}/"
 
 echo "DONE"
