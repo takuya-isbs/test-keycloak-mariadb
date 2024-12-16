@@ -47,7 +47,10 @@ IS_JWTSERVER() {
 KEYCLOAK_HOSTNAME=keycloak.example.org
 JWT_SERVER_HOSTNAME=jwtserver.example.org
 
+REALM=HPCI
+
 KC_HEALTH=https://${KEYCLOAK_HOSTNAME}/auth/health
+#KC_HEALTH=https://${KEYCLOAK_HOSTNAME}/auth/realms/${REALM}/
 JS_HEALTH=https://${JWT_SERVER_HOSTNAME}/menu/
 
 date

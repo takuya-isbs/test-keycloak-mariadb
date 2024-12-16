@@ -11,6 +11,20 @@ x-common: &common
       fluentd-address: localhost:24224
       tag: "{{.Name}}"
 
+x-keepalived: &keepalived
+  # SEE: https://github.com/osixia/docker-keepalived
+  image: osixia/keepalived:2.0.20
+  # Change and use host network
+  network_mode: host
+  cap_add:
+    - NET_ADMIN
+    - NET_BROADCAST
+    - NET_RAW
+  volumes:
+    # SEE: https://github.com/osixia/docker-keepalived/issues/33#issuecomment-1436201438
+    - ./keepalived-entrypoint.sh:/keepalived-entrypoint.sh
+  entrypoint: ["sh", "/keepalived-entrypoint.sh"]
+
 services:
   mariadb:
     hostname: mariadb
@@ -187,19 +201,7 @@ services:
       - TZ=${TZ}
     <<: [*common]
 
-  keepalived:
-    # SEE: https://github.com/osixia/docker-keepalived
-    image: osixia/keepalived:2.0.20
-    # Change and use host network
-    network_mode: host
-    cap_add:
-      - NET_ADMIN
-      - NET_BROADCAST
-      - NET_RAW
-    volumes:
-      # SEE: https://github.com/osixia/docker-keepalived/issues/33#issuecomment-1436201438
-      - ./keepalived-entrypoint.sh:/keepalived-entrypoint.sh
-    entrypoint: ["sh", "/keepalived-entrypoint.sh"]
+  keepalived-eth0:
     environment:
       TZ: ${TZ}
       #KEEPALIVED_COMMAND_LINE_ARGUMENTS: --log-detail
@@ -207,9 +209,20 @@ services:
       KEEPALIVED_VIRTUAL_IPS: 10.60.204.11/24
       KEEPALIVED_INTERFACE: eth0
       KEEPALIVED_PASSWORD: ${KEEPALIVED_PASSWORD:-SzVzOEFeXW9zEws02iPz645urNVGxUsB}
-    <<: [*common]
+    <<: [*common, *keepalived]
 
-  # use ./fluentd-start.sh instead of docker compose
+  keepalived-eth1:
+    environment:
+      TZ: ${TZ}
+      #KEEPALIVED_COMMAND_LINE_ARGUMENTS: --log-detail
+      KEEPALIVED_UNICAST_PEERS: "#PYTHON2BASH:['10.60.204.101', '10.60.204.102', '10.60.204.103']"
+      KEEPALIVED_VIRTUAL_IPS: 10.60.205.11/24
+      KEEPALIVED_INTERFACE: eth1
+      #KEEPALIVED_PASSWORD: ${KEEPALIVED_PASSWORD:-ogjf5YB2rQjWptS0tQk6U46xJndzupzP}
+      KEEPALIVED_PASSWORD: ${KEEPALIVED_PASSWORD:-SzVzOEFeXW9zEws02iPz645urNVGxUsB}
+    <<: [*common, *keepalived]
+
+# use ./fluentd-start.sh instead of docker compose
   fluentd:
     #image: fluent/fluentd:v1.17-1
     image: fluent/fluentd:v1.17-debian

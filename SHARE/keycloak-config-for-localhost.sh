@@ -2,6 +2,8 @@
 set -eu
 set -x
 
+CONT_NAME="$1"
+
 # SEE ALSO: keycloak-init.py, docker-compose.yml
 URL=http://localhost:8080/auth/
 ADMIN_REALM=master

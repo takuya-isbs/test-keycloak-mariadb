@@ -113,7 +113,7 @@ LXD_POOL=disk1
   - LXD コンテナ内に Docker などをインストール
 - ./03_ca.sh
   - テスト用の CA と証明書が作成される。
-  - 有効期限が切れたら、SHARE/certs/ 以下を削除し、再度作成が必要
+  - 有効期限が切れたら、SHARE/certs/ 以下を削除し、再度これを実行し、再度全コンテナ作成が必要
 
 ### 初期 DB ノード構築 (初期起動ノード)
 
@@ -201,7 +201,7 @@ kc1 ノードにて、以下を実行する。
   - ./up.sh jwt-server
 - 残りの kc1,kc2 ノードそれぞれで以下を実行
   - ./up.sh ALL
-- https://jwt-server/ には user1,PASSWORD でログイン可能
+- https://jwt-server/ にはユーザ名 user1 パスワードPASSWORD でログイン可能
 - 後述「テスト」を参照して試す
 
 次に、keycloak-old を起動している場合 (keycloak コンテナ (Keycloak 24) では不要) は、
@@ -265,7 +265,7 @@ LocalForward 57000 {manageコンテナのIPアドレス}:13128
 
 ## 単体ノードのみ異常停止から復旧
 
-- (間違えて停止や、一部停電などを想定)
+- (故障、間違えて停止や、一部停電などを想定)
 - lxc restart testkeycloak-kc1
 - ./mariadb-join.sh
 - ./up.sh ALL
@@ -348,9 +348,9 @@ LXD コンテナをすべて削除する。
 ### keycloak + mariadb の動作確認
 
 - squid 経由で https://keycloak.example.org に接続 (Web ブラウザ)
-- admin:admin でログイン
-- HPCI レルムを表示
-- testuser1 ユーザ詳細画面表示したままにしておく
+- ユーザ名 admin、パスワード admin でログイン
+- HPCI レルムを選択して表示
+- user1 ユーザ詳細画面表示したままにしておく
 - lxc ls で IPアドレスを確認
   - ./myip.sh を LXD コンテナそれぞれで実行するでも良い
 - 10.60.204.11 のアドレス (VIP) も追加でついているコンテナで操作
