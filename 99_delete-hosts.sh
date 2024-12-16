@@ -7,4 +7,5 @@ for HOST in $HOSTS; do
 done
 
 lxc profile delete $PROFILE_NAME || true
-lxc network delete $NETWORK_NAME || true
+lxc network delete $NETWORK0_NAME || true
+lxc network delete $NETWORK1_NAME || true
