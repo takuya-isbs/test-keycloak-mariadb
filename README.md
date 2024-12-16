@@ -133,6 +133,9 @@ LXD_POOL=disk1
 - (option: バックアップデータから戻す場合)
   - このタイミングでリストアする
   - ./mariadb-restore.sh ./BACKUP/ファイル名
+    - *-ALL-*.gz : keycloak と jwtserver
+    - *-keycloak-*.gz : keycloak のみ
+    - *-jwtserver-*.gz : jwtserver のみ
 - ./mariadb-init-jwt-server.sh
   - (リストア時には実行不要)
   - jwt-server 用のユーザを DB に追加
@@ -345,7 +348,13 @@ LXD コンテナをすべて削除する。
 ## DB データバックアップ
 
 - make shell@kc1
-- ./mariadb-backup.sh
+- ./mariadb-backup.sh ALL
+
+または
+
+- ./mariadb-backup.sh keycloak
+- ./mariadb-backup.sh jwtserver
+
 
 ## ログの確認
 
