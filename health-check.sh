@@ -49,20 +49,39 @@ JWT_SERVER_HOSTNAME=jwtserver.example.org
 
 REALM=HPCI
 
-KC_HEALTH=https://${KEYCLOAK_HOSTNAME}/auth/health
-#KC_HEALTH=https://${KEYCLOAK_HOSTNAME}/auth/realms/${REALM}/
-JS_HEALTH=https://${JWT_SERVER_HOSTNAME}/menu/
+USE_KC_HEALTH_URL=0
+
+KC_HEALTH_URL=https://${KEYCLOAK_HOSTNAME}/auth/health
+KC_REALM_URL=https://${KEYCLOAK_HOSTNAME}/auth/realms/${REALM}/
+JS_HEALTH_URL=https://${JWT_SERVER_HOSTNAME}/menu/
+
+CHECK_KC_HEALTH() {
+    local name="$1"
+
+    if [ $USE_KC_HEALTH_URL = 1 ]; then
+	local json=$(CURL_LXD $name $KC_HEALTH_URL $KEYCLOAK_HOSTNAME $JWT_SERVER_HOSTNAME)
+	#echo $json
+	local status=$(echo "$json" | jq -r .status || true)
+	CHECK "$status" "UP" "(from $name) $KC_HEALTH_URL"
+    else
+	local json=$(CURL_LXD $name $KC_REALM_URL $KEYCLOAK_HOSTNAME $JWT_SERVER_HOSTNAME)
+	local status=$(echo "$json" | jq -r .realm || true)
+	CHECK "$status" "$REALM" "(from $name) $KC_REALM_URL"
+    fi
+}
 
 date
 VIP_HOST=
 for HOST in $DB_HOSTS; do
     FULLNAME=${PROJECT}-${HOST}
-    #CURL_LXD $FULLNAME $KC_HEALTH $KEYCLOAK_HOSTNAME $JWT_SERVER_HOSTNAME
-    status=$(CURL_LXD $FULLNAME $KC_HEALTH $KEYCLOAK_HOSTNAME $JWT_SERVER_HOSTNAME | jq -r .status || true)
-    CHECK "$status" "UP" "(from $FULLNAME) $KC_HEALTH"
-    #CURL_LXD $FULLNAME $JS_HEALTH $KEYCLOAK_HOSTNAME $JWT_SERVER_HOSTNAME
-    status=$(CURL_LXD $FULLNAME $JS_HEALTH $KEYCLOAK_HOSTNAME $JWT_SERVER_HOSTNAME | IS_JWTSERVER || true)
-    CHECK "$status" "1" "(from $FULLNAME) $JS_HEALTH"
+
+    CHECK_KC_HEALTH $FULLNAME
+
+    json=$(CURL_LXD $FULLNAME $JS_HEALTH_URL $KEYCLOAK_HOSTNAME $JWT_SERVER_HOSTNAME)
+    #echo "$json"
+    status=$(echo "$json" | IS_JWTSERVER || true)
+    CHECK "$status" "1" "(from $FULLNAME) $JS_HEALTH_URL"
+
     status=$(LXC_EXEC $FULLNAME -- docker compose exec mariadb mariadb-admin ping | grep "is alive" | wc -l || true)
     CHECK "$status" "1" "(from $FULLNAME) mariadb"
 
@@ -78,9 +97,18 @@ for HOST in $DB_HOSTS; do
 done
 
 # VIP
-status=$(CURL_SQUID $KC_HEALTH | jq -r .status || true)
-CHECK "$status" "UP" "(from VIP,$VIP_HOST) $KC_HEALTH"
-status=$(CURL_SQUID $JS_HEALTH | IS_JWTSERVER || true)
-CHECK "$status" "1" "(from VIP,$VIP_HOST) $JS_HEALTH"
+if [ $USE_KC_HEALTH_URL = 1 ]; then
+    json=$(CURL_SQUID $KC_HEALTH_URL)
+    status=$(echo "$json" | jq -r .status || true)
+    CHECK "$status" "UP" "(from VIP,$VIP_HOST) $KC_HEALTH_URL"
+else
+    json=$(CURL_SQUID $KC_REALM_URL)
+    status=$(echo "$json" | jq -r .realm || true)
+    CHECK "$status" "$REALM" "(from VIP,$VIP_HOST) $KC_REALM_URL"
+fi
+
+json=$(CURL_SQUID $JS_HEALTH_URL)
+status=$(echo "$json" | IS_JWTSERVER || true)
+CHECK "$status" "1" "(from VIP,$VIP_HOST) $JS_HEALTH_URL"
 
 exit $ERROR_COUNT
