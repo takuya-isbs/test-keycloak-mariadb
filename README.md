@@ -100,8 +100,10 @@ LXD_POOL=disk1
 
 ## クイックスタート
 
-- ./ALL.sh
+- ./ALL.sh を実行する
   - 後述の手順をスクリプト化したもの
+  - 構築後は ./04_setup.sh のみを再度実行可能
+    - ノード用 LXD コンテナを破棄せず、ノード内 Docker コンテナのみを再構築可能
 
 ## 環境構築手順
 
@@ -173,6 +175,9 @@ kc1 ノードにて、以下を実行する。
     - docker compose up -d --no-recreate を実行
     - 初期ノード初回実行時、ここではまだ jwt-server は起動しない
       - Keycloak にまだ jwt-server の設定をしていないため
+  - INIT-OLD を使うと、古い版の Keycloak を使用して構築する
+    - INIT-OLD を使用した場合
+      - 以降、./up.sh ALL となっている部分を ./up.sh ALL-OLD と読み替えて実行する
 - 間違えて up.sh を使わず --no-recreate をつけずに docker compose up -d を実行してしまった場合
   - mariadb が起動しない
   - 以下を実行し、再度 mariadb をクラスタに所属しなおす
@@ -195,20 +200,17 @@ kc1 ノードにて、以下を実行する。
       - python-keycloak は、users/profile API を発行できないため、カスタム user attributes を格納できない
       - ./keycloak-config-for-localhost.sh は、keycloak コンテナ内で kcadm.sh を使って設定している
     - TODO keycloak-config.sh だけで設定できるように python-keycloak の低レベル関数を利用して直接 API を利用する案
-- もう一度 manage コンテナで ./keycloak-config.sh を実行
-  - user attributes を再度格納するため
+  - もう一度 manage コンテナで ./keycloak-config.sh を実行
+    - user attributes を再度格納するため
 - kc1 ノードで以下を実行
   - ./up.sh jwt-server
-- 残りの kc1,kc2 ノードそれぞれで以下を実行
+- 残りの kc2,kc3 ノードそれぞれで以下を実行
   - ./up.sh ALL
-- https://jwt-server/ にはユーザ名 user1 パスワードPASSWORD でログイン可能
-- 後述「テスト」を参照して試す
 
-次に、keycloak-old を起動している場合 (keycloak コンテナ (Keycloak 24) では不要) は、
-以下の操作をおこなう。
-
-(MEMO: Keycloak 24 から、ユーザ拡張属性のサイズ制限が無くなった。)
-  https://www.keycloak.org/docs/latest/release_notes/index.html#user-attribute-value-length-extension
+次に、keycloak-old を起動している場合は、以下の操作をおこなう。
+  (keycloak コンテナ (Keycloak 24) では不要) 
+  (MEMO: Keycloak 24 から、ユーザ拡張属性のサイズ制限が無くなった。)
+    https://www.keycloak.org/docs/latest/release_notes/index.html#user-attribute-value-length-extension
 
 Keycloak が動作しているノード一台で、以下を実行する。
 (データベースの USER_ATTRIBUTE 領域の最大サイズを拡張するための操作。)
@@ -217,6 +219,11 @@ Keycloak が動作しているノード一台で、以下を実行する。
 - ./mariadb-init-keycloak.sh
 
 VALUE の Type が varchar(255) から mediumtext に変わっていれば成功。
+
+次に、動作確認をする。
+
+- https://jwt-server/ にはユーザ名 user1 パスワードPASSWORD でログイン可能
+- 後述「テスト」を参照して試す
 
 ## squid 経由でウェブブラウザアクセス
 
@@ -267,6 +274,7 @@ LocalForward 57000 {manageコンテナのIPアドレス}:13128
 
 - (故障、間違えて停止や、一部停電などを想定)
 - lxc restart testkeycloak-kc1
+- make shell@kc1
 - ./mariadb-join.sh
 - ./up.sh ALL
 - ヘルスチェックをおこなう

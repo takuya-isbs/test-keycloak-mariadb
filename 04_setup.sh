@@ -30,11 +30,16 @@ lxc_exec manage ./keycloak-config.sh
 if [ "$INIT_TARGET" = "INIT" ]; then
     # not for INIT-OLD
     lxc_exec kc1 ./keycloak-config-for-localhost.sh
+
+    # re-update to set user attributes
+    # TODO use ./keyclaok-add-user.sh instead of ./keycloak-config.sh
+    lxc_exec manage ./keycloak-config.sh
 fi
-# re-update to set user attributes
-# TODO use ./keyclaok-add-user.sh instead of ./keycloak-config.sh
-lxc_exec manage ./keycloak-config.sh
 
 lxc_exec kc1 ./up.sh jwt-server
 lxc_exec kc2 ./up.sh $UP_TARGET
 lxc_exec kc3 ./up.sh $UP_TARGET
+
+if [ "$INIT_TARGET" = "INIT-OLD" ]; then
+    lxc_exec kc1 ./mariadb-init-keycloak.sh
+fi

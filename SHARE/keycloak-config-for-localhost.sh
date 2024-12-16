@@ -13,6 +13,8 @@ KCADM="docker compose exec -T keycloak /opt/keycloak/bin/kcadm.sh"
 
 $KCADM config credentials --server $URL --realm $ADMIN_REALM --user $USER --password $PASSWORD
 
+# users/profile API for Keycloak 22 or later
+
 #$KCADM get users/profile -r $REALM
 
 $KCADM update users/profile -r $REALM -f - <<'EOF'
