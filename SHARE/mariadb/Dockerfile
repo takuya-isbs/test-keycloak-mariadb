@@ -1,4 +1,4 @@
-FROM mariadb:10.6.4
+FROM mariadb:10.6.20
 
 ENV DEBIAN_FRONTEND=noninteractive
 
