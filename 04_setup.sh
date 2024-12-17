@@ -3,6 +3,7 @@ set -eu
 source ./common.sh
 
 OLD="${1:-}"
+BACKUP="${2:-}"
 
 if [ "$OLD" = "old" ]; then
     INIT_TARGET=INIT-OLD
@@ -20,6 +21,14 @@ lxc_exec kc3 ./_down.sh
 
 lxc_exec kc1 ./setup-glusterfs.sh
 lxc_exec kc1 ./mariadb-new.sh
+if [ -n "$BACKUP" ]; then
+    if [[ "$BACKUP" == SHARE/* || "$BACKUP" == ./SHARE/* ]]; then
+        BACKUP=${BACKUP#./}
+        BACKUP=${BACKUP#SHARE/}
+    fi
+    lxc_exec kc1 ./mariadb-restore.sh "$BACKUP"
+fi
+
 lxc_exec kc2 ./mariadb-join.sh
 lxc_exec kc3 ./mariadb-join.sh
 

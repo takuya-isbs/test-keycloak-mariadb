@@ -182,11 +182,13 @@ services:
     <<: [*common]
 
   # Apache for jwt-server
-  # apache-ajp:
-  #   build: ./apache-ajp
-  #   environment:
-  #     - TZ=${TZ}
-  #   <<: [*common]
+  apache-ajp:
+    build: ./apache-ajp
+    networks:
+      mynet:
+    environment:
+      - TZ=${TZ}
+    <<: [*common]
 
   nginx:
     hostname: nginx

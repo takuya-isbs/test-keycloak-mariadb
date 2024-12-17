@@ -37,22 +37,24 @@ COMPOSE() {
     MY_HOSTNAME=$HOSTNAME MY_IPADDR=$MY_IPADDR docker compose "$@"
 }
 
-CONTLIST_COMMON="nginx keepalived-eth0 keepalived-eth1"
+CONTLIST_COMMON="nginx apache-ajp keepalived-eth0 keepalived-eth1"
 CONTLIST_NEW_BASE="$CONTLIST_COMMON keycloak"
 CONTLIST_NEW_ALL="$CONTLIST_NEW_BASE jwt-server"
 CONTLIST_OLD_BASE="$CONTLIST_COMMON keycloak-old"
 CONTLIST_OLD_ALL="$CONTLIST_OLD_BASE jwt-server"
 
+COMPOSE_UP="COMPOSE up -d --force-recreate --build"
+
 if [ "$CONTAINER" = "INIT" ]; then
-    COMPOSE up -d --force-recreate $CONTLIST_NEW_BASE
+    $COMPOSE_UP $CONTLIST_NEW_BASE
 elif [ "$CONTAINER" = "ALL" ]; then
-    COMPOSE up -d --force-recreate $CONTLIST_NEW_ALL
+    $COMPOSE_UP $CONTLIST_NEW_ALL
 elif [ "$CONTAINER" = "INIT-OLD" ]; then
-    COMPOSE up -d --force-recreate $CONTLIST_OLD_BASE
+    $COMPOSE_UP $CONTLIST_OLD_BASE
 elif [ "$CONTAINER" = "ALL-OLD" ]; then
-    COMPOSE up -d --force-recreate $CONTLIST_OLD_ALL
+    $COMPOSE_UP $CONTLIST_OLD_ALL
 elif [ -n "$CONTAINER" ]; then
-    COMPOSE up -d --force-recreate "$CONTAINER"
+    $COMPOSE_UP $CONTAINER
 else
     echo "Usage: ./up.sh ALL|<CONTAINER_NAME>"
 fi
