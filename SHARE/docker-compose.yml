@@ -69,7 +69,6 @@ services:
       - MARIADB_USER=keycloak
       - MARIADB_PASSWORD=${MARIADB_PASSWORD:-keycloak_password}
       - MARIADB_INITDB_SKIP_TZINFO=true
-      - TZ=Asia/Tokyo
       - JWTSERVER_DB=${JWTSERVER_DB}
       - JWTSERVER_DB_USER=${JWTSERVER_DB_USER}
       - JWTSERVER_DB_PASSWORD=${JWTSERVER_DB_PASSWORD}
@@ -181,6 +180,13 @@ services:
       - USER=${JWTSERVER_DB_USER}
       - PASSWORD=${JWTSERVER_DB_PASSWORD}
     <<: [*common]
+
+  # Apache for jwt-server
+  # apache-ajp:
+  #   build: ./apache-ajp
+  #   environment:
+  #     - TZ=${TZ}
+  #   <<: [*common]
 
   nginx:
     hostname: nginx

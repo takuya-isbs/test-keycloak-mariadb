@@ -372,6 +372,7 @@ LXD コンテナをすべて削除する。
   - ./myip.sh を LXD コンテナそれぞれで実行するでも良い
 - 10.60.204.11 のアドレス (VIP) も追加でついているコンテナで操作
   - docker compose restart keepalived
+  - ./keepalived-ctl.sh restart
   - ./myip.sh
 - 10.60.204.11 のアドレスが他のノードに移転されたことを確認
 - ユーザ詳細画面をリロード
@@ -380,14 +381,15 @@ LXD コンテナをすべて削除する。
 ### jwt-server の動作確認
 
 - squid 経由で https://jwtserver.example.org に接続 (Web ブラウザ)
-- make shell@manage にて jwt-agent を起動
+- make shell@manage 内で jwt-agent をインストール・起動
   - ./install-jwt-agent.sh
     - 取得された SHARE/jwt-agent ディレクトリは以後更新されない。
       - (更新・変更する場合は、手動で変更する)
   - ./jwt-agent-via-squid.sh <jwt-agent引数...>
   - manage コンテナの squid を利用してホスト名解決される
+  - TODO  jwt-server URL の最後にスラッシュをつけるとエラーになる問題を調査
 - 10.60.204.11 のアドレスがついているコンテナで操作
-  - docker compose restart keepalived
+  - ./keepalived-ctl.sh restart
   - ./myip.sh
 - 10.60.204.11 のアドレスが他のノードに移転されたことを確認
 - jwt-agent が停止しないことを確認
@@ -403,16 +405,21 @@ DB バックアップを作成しておく。
 
 ### Keycloak の更新
 
+- ./health-check.sh で VIP ノードを把握する
 - VIP が付いていないノードから更新していく
-- SHARE/keycloak-quarkus/Dockerfile を編集
-  - ARG KEYCLOAK_IMAGE=keycloak/keycloak:24.0 の値を変更
-- docker compose build
-- docker compose rm -sf keycloak
-- ./up.sh keycloak
-- VIP が付いていないノード更新後、VIP のノードにて
-  - docker compose stop keepalived
-  - その後同様に更新する
-  - docker compose start keepalived
+ - SHARE/keycloak-quarkus/Dockerfile を編集
+    - ARG KEYCLOAK_IMAGE=keycloak/keycloak:24.0 の値を変更
+  - docker compose build
+  - docker compose rm -sf keycloak
+  - ./up.sh keycloak
+  - 1ノード更新したら、ホストOS側でヘルスチェック
+    - ./health-check.sh
+    - 動作していることを確認する
+- VIP のノードにて以下を実行
+  - ./keepalived-ctl.sh stop
+    - この時点で他のノードに VIP が移転する
+  - 他のノード同様に更新する
+  - ./keepalived-ctl.sh start
 
 ### 無停止で Keycloak を大幅更新の練習
 
@@ -425,23 +432,41 @@ DB バックアップを作成しておく。
   - docker compose rm -sf keycloak-old
   - ./up.sh keycloak
 - VIP が付いているノードにて
-  - docker compose stop keepalived
+  - ./keepalived-ctl.sh stop
   - (以下、上記同様の更新処理をおこなう)
   - docker compose build
   - docker compose rm -sf keycloak-old
   - ./up.sh keycloak
-  - docker compose start keepalived
+  - ./keepalived-ctl.sh start
 - Keycloak ログイン中のウェブブラウザはエラーになった。
   - 再度ログインしなおすと正常表示できた。
 - jwt-agent は動き続けた。
-- TODO user attribute 領域はどうなったか確認 (Keycloak 24 から仕様が変わったので)
 
-### Keycloak バージョンダウンはできない
+#### Keycloak バージョンダウンはできない
 
 - 試したところ Web UI でログインできなくなった。
 - 対応していないようだ。
 
-### TODO
+### jwt-server だけを更新
+
+- SHARE/jwt-server/Dockerfile を編集
+  - TOMCAT_VER の値を変更
+  - JWT_SERVER_VER の値を変更
+- jwt-agent を起動しておく。(動作確認目的)
+- VIP が付いていないノード(2台)にて
+  - docker compose build jwt-server
+  - docker compose rm -sf jwt-server
+  - ./up.sh jwt-server
+- VIP が付いているノードにて
+  - ./keepalived-ctl.sh stop
+  - (以下、上記同様の更新処理をおこなう)
+  - docker compose build jwt-server
+  - docker compose rm -sf jwt-server
+  - ./up.sh jwt-server
+  - ./keepalived-ctl.sh start
+
+## TODO
 
 - パラメータの一元管理
 - SAML IdP 連携を API で格納
+- Keycloak更新時 user attribute領域はどう更新されるか確認 (Keycloak 24 から仕様が変わったので)

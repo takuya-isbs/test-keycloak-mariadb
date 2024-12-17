@@ -10,7 +10,8 @@ RUN dnf -y update \
 RUN alternatives --set java java-21-openjdk.x86_64
 RUN alternatives --set javac java-21-openjdk.x86_64
 
-ARG TOMCAT_VER=10.1.31
+ARG TOMCAT_VER=10.1.34
+ARG JWT_SERVER_VER=1.1.0
 
 RUN wget https://archive.apache.org/dist/tomcat/tomcat-10/v$TOMCAT_VER/bin/apache-tomcat-$TOMCAT_VER.tar.gz
 RUN tar -xvf apache-tomcat-$TOMCAT_VER.tar.gz -C /opt
@@ -22,7 +23,7 @@ RUN sh -c 'chmod +x /opt/tomcat/bin/*.sh'
 
 RUN rm -rf /opt/tomcat/webapps/*
 
-RUN git clone https://github.com/oss-tsukuba/jwt-server.git
+RUN git clone --branch $JWT_SERVER_VER https://github.com/oss-tsukuba/jwt-server.git
 
 #COPY application.properties /jwt-server/src/main/resources/
 RUN sed -i 's/${KEYCLOAK}:443/${KEYCLOAK}/' /jwt-server/src/main/resources/application.properties
