@@ -122,6 +122,8 @@ LXD_POOL=disk1
 - make shell@kc1
 - (option: Dockerfile イメージを再ビルドする場合)
   - docker compose build
+- ./ufw.sh
+  - すべてのノードで実行する
 - ./setup-glusterfs.sh
   - 初期ノードのみで実行する
   - /mnt/glusterfs にマウントされる
@@ -149,6 +151,7 @@ LXD_POOL=disk1
   - (kc1 を再参加する場合も同様)
 - (option: イメージ再ビルドする場合)
   - docker compose build
+- ./ufw.sh
 - ./mariadb-join.sh
   - 2台目以降参加する場合
   - 間違えて ./mariadb-new.sh を実行した場合

@@ -236,12 +236,14 @@ services:
     image: fluent/fluentd:v1.17-debian
     restart: "no"
     init: true
+    networks:
+      mynet:
     volumes:
       - ./fluent.conf:/fluentd/etc/fluent.conf
       - /mnt/glusterfs/fluentd-${MY_HOSTNAME:-unknown}:/fluentd/log
     ports:
-      - 24224:24224
-      - 24224:24224/udp
+      - 127.0.0.1:24224:24224
+      - 127.0.0.1:24224:24224/udp
     environment:
       - TZ=${TZ}
 
@@ -251,3 +253,7 @@ volumes:
 networks:
   mynet:  # IPv4 only
     driver: bridge
+    ipam:
+      config:
+        # SEE ALSO: ufw.sh
+        - subnet: 172.30.0.0/16

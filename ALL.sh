@@ -8,4 +8,3 @@ set -eu
 ./LIST.sh
 
 ./04_setup.sh
-./health-check.sh

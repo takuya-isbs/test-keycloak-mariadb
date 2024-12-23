@@ -19,6 +19,10 @@ lxc_exec kc1 ./_down.sh
 lxc_exec kc2 ./_down.sh
 lxc_exec kc3 ./_down.sh
 
+lxc_exec kc1 ./ufw.sh
+lxc_exec kc2 ./ufw.sh
+lxc_exec kc3 ./ufw.sh
+
 lxc_exec kc1 ./setup-glusterfs.sh
 lxc_exec kc1 ./mariadb-new.sh
 if [ -n "$BACKUP" ]; then
@@ -52,3 +56,7 @@ lxc_exec kc3 ./up.sh $UP_TARGET
 if [ "$INIT_TARGET" = "INIT-OLD" ]; then
     lxc_exec kc1 ./mariadb-init-keycloak.sh
 fi
+while ! ./health-check.sh; do
+    echo "retry health-check"
+    sleep 2
+done
