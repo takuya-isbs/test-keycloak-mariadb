@@ -3,7 +3,16 @@
 set -eu
 set -x
 
-MYSQL="mysql -h ${MYSQL_HOST} -u ${USER} -p${PASSWORD} ${DB}"
+MYSQL_BASE="mysql -h ${MYSQL_HOST} -u ${USER} -p${PASSWORD}"
+MYSQL="${MYSQL_BASE} ${DB}"
+
+db_exist() {
+    [[ $(${MYSQL_BASE} -e "SELECT 1 FROM information_schema.schemata WHERE SCHEMA_NAME = '${DB}';") ]]
+}
+
+while ! db_exist; do
+    sleep 1
+done
 
 $MYSQL < /jwt-server/ddl/jwt-server.ddl
 

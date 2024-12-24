@@ -59,14 +59,14 @@ CHECK_KC_HEALTH() {
     local name="$1"
 
     if [ $USE_KC_HEALTH_URL = 1 ]; then
-	local json=$(CURL_LXD $name $KC_HEALTH_URL $KEYCLOAK_HOSTNAME $JWT_SERVER_HOSTNAME || :)
-	#echo $json
-	local status=$(echo "$json" | jq -r .status || :)
-	CHECK "$status" "UP" "(from $name) $KC_HEALTH_URL"
+        local json=$(CURL_LXD $name $KC_HEALTH_URL $KEYCLOAK_HOSTNAME $JWT_SERVER_HOSTNAME || :)
+        #echo $json
+        local status=$(echo "$json" | jq -r .status || :)
+        CHECK "$status" "UP" "(from $name) $KC_HEALTH_URL"
     else
-	local json=$(CURL_LXD $name $KC_REALM_URL $KEYCLOAK_HOSTNAME $JWT_SERVER_HOSTNAME || :)
-	local status=$(echo "$json" | jq -r .realm || :)
-	CHECK "$status" "$REALM" "(from $name) $KC_REALM_URL"
+        local json=$(CURL_LXD $name $KC_REALM_URL $KEYCLOAK_HOSTNAME $JWT_SERVER_HOSTNAME || :)
+        local status=$(echo "$json" | jq -r .realm || :)
+        CHECK "$status" "$REALM" "(from $name) $KC_REALM_URL"
     fi
 }
 
