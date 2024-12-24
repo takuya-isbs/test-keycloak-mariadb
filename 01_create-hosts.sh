@@ -36,8 +36,8 @@ $LXC profile edit $PROFILE_NAME <<EOF
 config:
   security.nesting: true
   security.privileged: true
-  limits.memory: 3GB
-  limits.cpu: 4
+  #limits.memory: 3GB
+  #limits.cpu: 4
 description: test Keycloak+MariaDB
 devices:
   eth0:
@@ -60,12 +60,15 @@ devices:
 EOF
 
 is_vm() {
-    local NAME="$1"
-    for host in $DB_HOSTS; do
-        if [ "$host" = "$NAME" ]; then
-            return 0
-        fi
-    done
+    # local NAME="$1"
+    # for host in $DB_HOSTS; do
+    #     if [ "$host" = "$NAME" ]; then
+    #         return 0
+    #     fi
+    # done
+    # return 1
+
+    # use LXD container
     return 1
 }
 
